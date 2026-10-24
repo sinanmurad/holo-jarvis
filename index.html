@@ -47,8 +47,10 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
   <div class="card">
     <h1>J.A.R.V.I.S.</h1>
     <p>Kamera açılacak ve holografik paneller etrafında belirecek. Telefonu çevirdikçe paneller havada yerinde kalır. Mikrofona basıp konuş, Jarvis cevap versin.</p>
-    <input id="key0" type="password" placeholder="Groq API anahtarı (gsk_…)" autocomplete="off">
-    <small>Anahtar sadece bu telefonda saklanır, hiçbir yere gönderilmez (yalnızca Groq'a). Anahtarsız da açabilirsin, sonra ⚙ AYAR'dan eklersin.</small>
+    <button id="puter0" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
+    <small id="puterState0">Anahtar gerekmez. Açılan pencerede ücretsiz Puter hesabıyla giriş yap.</small>
+    <input id="key0" type="password" placeholder="ya da API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
+    <small>Anahtar sadece bu telefonda saklanır, yalnızca ilgili servise gönderilir.</small>
     <button id="go">JARVIS'İ BAŞLAT</button>
     <p id="startErr" class="err" hidden></p>
   </div>
@@ -57,14 +59,17 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 <div class="sheet" id="settings" hidden>
   <div class="card">
     <h1 style="font-size:20px">AYARLAR</h1>
-    <input id="key1" type="password" placeholder="Groq API anahtarı (gsk_…)" autocomplete="off">
-    <small>console.groq.com → API Keys → Create API Key</small>
+    <button id="puter1" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
+    <small id="puterState1">Anahtarsız Claude için Puter hesabıyla giriş yap.</small>
+    <input id="key1" type="password" placeholder="API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
+    <small>Anahtar girersen önce o kullanılır. Boş bırakırsan Puter üzerinden Claude kullanılır.</small>
     <button id="save">KAYDET</button>
     <button class="ghost" id="close">KAPAT</button>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -288,26 +293,69 @@ $('txt').addEventListener('keydown', e => { if (e.key === 'Enter'){ const q = e.
 // ---------------- brain (Groq) ----------------
 const SYS = 'Sen J.A.R.V.I.S.\'sin: kullanıcının kişisel yapay zekâ asistanı. Odada holografik paneller olarak görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma, bilmediğini söyle.';
 const MODELS = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
-async function groq(q){
-  const key = store.get('groqKey'); if (!key) throw { code:'nokey' };
-  const messages = [{ role:'system', content: SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.` }, ...history.slice(-8), { role:'user', content:q }];
+const clean = t => String(t || '').replace(/[*#_`]/g,'').trim();
+function msgs(q){ return [...history.slice(-8), { role:'user', content:q }]; }
+function sysNow(){ return SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.`; }
+async function viaGroq(key, q){
+  const messages = [{ role:'system', content: sysNow() }, ...msgs(q)];
   for (const model of MODELS){
     let r; try { r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body: JSON.stringify({ model, messages, temperature:0.7, max_tokens:400 }) }); }
     catch(e){ throw { code:'net' }; }
-    if (r.ok){ const j = await r.json(); const t = (j.choices?.[0]?.message?.content || '').replace(/[*#_`]/g,'').trim(); if (t) return t; continue; }
+    if (r.ok){ const j = await r.json(); const t = clean(j.choices?.[0]?.message?.content); if (t) return t; continue; }
     if (r.status === 401) throw { code:'badkey' };
     if (r.status === 429) throw { code:'rate' };
-    continue; // model missing/decommissioned → try next
   }
   throw { code:'nomodel' };
 }
+async function viaAnthropic(key, q){
+  for (const model of ['claude-haiku-5-5','claude-sonnet-5-5']){
+    let r; try { r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' }, body: JSON.stringify({ model, max_tokens:400, system: sysNow(), messages: msgs(q) }) }); }
+    catch(e){ throw { code:'net' }; }
+    if (r.ok){ const j = await r.json(); const t = clean((j.content||[]).map(c=>c.text||'').join('')); if (t) return t; continue; }
+    if (r.status === 401) throw { code:'badkey' };
+    if (r.status === 429) throw { code:'rate' };
+  }
+  throw { code:'nomodel' };
+}
+function puterText(res){
+  if (!res) return '';
+  if (typeof res === 'string') return res;
+  const c = res.message?.content ?? res.text ?? res;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.map(x => x.text || '').join('');
+  return String(res);
+}
+async function viaPuter(q){
+  if (!window.puter) throw { code:'noputer' };
+  const signed = await puter.auth.isSignedIn().catch(()=>false);
+  if (!signed) throw { code:'nologin' };
+  const messages = [{ role:'system', content: sysNow() }, ...msgs(q)];
+  for (const opt of [{ model:'claude-sonnet-4-5' }, { model:'claude-sonnet-4' }, {}]){
+    try { const t = clean(puterText(await puter.ai.chat(messages, opt))); if (t) return t; } catch(e){ /* try next model */ }
+  }
+  throw { code:'puterfail' };
+}
+async function groq(q){
+  const key = store.get('groqKey');
+  if (key.startsWith('sk-ant')) return viaAnthropic(key, q);
+  if (key) return viaGroq(key, q);
+  return viaPuter(q);
+}
+async function puterLogin(stateEl){
+  if (!window.puter){ stateEl.textContent = 'Puter yüklenemedi, internet bağlantını kontrol et.'; return; }
+  try { await puter.auth.signIn(); stateEl.textContent = '✓ Claude bağlı (Puter).'; }
+  catch(e){ stateEl.textContent = 'Giriş tamamlanmadı. Açılır pencereye izin verip tekrar dene.'; }
+}
+$('puter0').onclick = () => puterLogin($('puterState0'));
+$('puter1').onclick = () => puterLogin($('puterState1'));
+setTimeout(async () => { try { if (window.puter && await puter.auth.isSignedIn()) { $('puterState0').textContent = '✓ Claude bağlı (Puter).'; $('puterState1').textContent = '✓ Claude bağlı (Puter).'; } } catch(e){} }, 1200);
 async function ask(q){
   S.you = q; S.mode = 'thinking'; S.answer = '…'; pDialog.redraw(); pDialog.pop = 1;
   let a;
   try { a = await groq(q); history.push({ role:'user', content:q }, { role:'assistant', content:a }); }
   catch(e){
-    a = { nokey:'Beynimi bağlamak için Groq API anahtarı gerekiyor efendim. Sağ üstteki AYAR\'a dokunun.', badkey:'API anahtarı geçersiz görünüyor efendim. AYAR\'dan kontrol edin.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Groq modellerine ulaşamadım efendim.' }[e.code] || 'Bir sorun oluştu efendim.';
-    if (e.code === 'nokey' || e.code === 'badkey') setTimeout(()=>{ $('settings').hidden = false; }, 1500);
+    a = { nologin:'Beynimi bağlamak için AYAR\'dan ücretsiz Claude\'a bağlanın efendim.', noputer:'Bağlantı servisine ulaşamadım efendim.', puterfail:'Claude şu an cevap vermedi efendim, tekrar deneyin.', nokey:'Beynimi bağlamak için AYAR\'dan bağlanın efendim.', badkey:'API anahtarı geçersiz görünüyor efendim. AYAR\'dan kontrol edin.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Groq modellerine ulaşamadım efendim.' }[e.code] || 'Bir sorun oluştu efendim.';
+    if (['nokey','badkey','nologin'].includes(e.code)) setTimeout(()=>{ $('settings').hidden = false; }, 1500);
   }
   S.answer = a; speak(a);
 }
@@ -315,7 +363,7 @@ async function ask(q){
 // ---------------- settings ----------------
 $('gear').onclick = () => { $('key1').value = store.get('groqKey'); $('settings').hidden = false; };
 $('close').onclick = () => { $('settings').hidden = true; };
-$('save').onclick = () => { store.set('groqKey', $('key1').value.trim()); $('settings').hidden = true; S.answer = 'Anahtar kaydedildi. Beyin çevrimiçi, efendim.'; S.you=''; speak(S.answer); };
+$('save').onclick = () => { store.set('groqKey', $('key1').value.trim()); $('settings').hidden = true; S.answer = 'Ayarlar kaydedildi. Beyin çevrimiçi, efendim.'; S.you=''; speak(S.answer); };
 
 // ---------------- start ----------------
 $('go').onclick = async () => {
@@ -336,7 +384,7 @@ $('go').onclick = async () => {
   $('start').hidden = true; ['recenter','gear','bar'].forEach(id=>$(id).hidden=false);
   requestAnimationFrame(loop);
   setTimeout(()=>{ recenter(); }, 400);
-  setTimeout(()=>{ S.answer = store.get('groqKey') ? 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?' : 'Holografik arayüz hazır efendim. Konuşabilmem için AYAR\'dan Groq anahtarını ekleyin.'; speak(S.answer); }, 700);
+  setTimeout(()=>{ S.answer = 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?'; speak(S.answer); }, 700);
 };
 })();
 </script>
