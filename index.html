@@ -10,7 +10,10 @@
 :root{--holo:#5ff2ff;--amber:#ffb547;--ink:#d6ecf0;--glass:rgba(4,16,20,.72)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:-apple-system,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
-video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+video,#gl,#hands,#fx{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+video{filter:brightness(.5) contrast(1.15) saturate(.7) hue-rotate(-8deg)}
+#fx{pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,rgba(0,40,50,0) 40%,rgba(0,10,14,.75) 100%),repeating-linear-gradient(0deg,rgba(95,242,255,.035) 0 1px,transparent 1px 4px);mix-blend-mode:normal}
+#gl{z-index:2}#hands{z-index:3;pointer-events:none}
 #gl{touch-action:none}
 .btn{position:fixed;z-index:5;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;padding:10px 14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #recenter{top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
@@ -37,14 +40,16 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 .cur.pinch{transform:scale(.6);border-color:var(--amber);box-shadow:0 0 22px var(--amber)}
 .cur.hover{border-color:#fff}
 .cur.grab{transform:scale(.75);border-color:var(--amber);box-shadow:0 0 28px var(--amber)}
-body.vr video{visibility:hidden}
+body.vr video,body.vr #fx{visibility:hidden}
 body.vr .btn,body.vr #bar{display:none!important}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <video id="cam" playsinline muted autoplay></video>
+<div id="fx"></div>
 <canvas id="gl"></canvas>
+<canvas id="hands"></canvas>
 
 <button class="btn" id="recenter" hidden>⟲ ORTALA</button>
 <button class="btn" id="gear" hidden>⚙ AYAR</button>
@@ -171,7 +176,7 @@ const pTitle = makePanel(1024, 420, 1.15, (ctx,w,h)=>{
   ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}   ·   ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`, w/2, 350);
   ctx.restore();
 });
-place(pTitle, 0, 1.15, 3.5);
+place(pTitle, 0, 0.98, 3.0);
 
 const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
   frame(ctx,w,h, S.mode==='listening' ? AMBER : HOLO);
@@ -193,7 +198,7 @@ const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
   ctx.fillText(S.mode==='listening' ? 'Sizi dinliyorum…' : 'Panele dokun ya da KONUŞ\'a bas ▌', 74, h-88);
   ctx.restore();
 });
-place(pDialog, 0, 0.05, 3.0);
+place(pDialog, 0, 0.0, 2.6);
 
 const stats = { power:100, core:32, net:92, mem:64 };
 const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
@@ -207,7 +212,7 @@ const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
     const segs = Math.round(36*v); for(let s=0;s<segs;s++) ctx.fillRect(44+s*20,y+46,14,14);
   }); ctx.restore();
 });
-place(pStatus, -30, 0.1, 3.2);
+place(pStatus, -25, 0.05, 2.8);
 
 let sweep = 0; const blips = Array.from({length:7},()=>({a:Math.random()*6.28,r:30+Math.random()*190}));
 const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
@@ -221,7 +226,7 @@ const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
   blips.forEach(b=>{ const d = ((sweep - b.a) % 6.283 + 6.283) % 6.283; const al = Math.max(0.15, 1 - d/4); ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(cx+b.r*Math.cos(b.a), cy+b.r*Math.sin(b.a), 7, 0, 6.283); ctx.fill(); });
   ctx.restore();
 });
-place(pRadar, 30, 0.1, 3.2);
+place(pRadar, 25, 0.05, 2.8);
 
 let wt = 0;
 const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
@@ -234,7 +239,7 @@ const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
   for (let x=40; x<w-40; x+=24){ const hh = live ? 8+Math.abs(Math.sin(x*0.3+wt*10))*40 : 6; ctx.fillRect(x, h-40-hh, 14, hh); }
   ctx.restore();
 });
-place(pVoice, -56, -0.7, 3.2);
+place(pVoice, -46, -0.6, 2.9);
 
 const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
   frame(ctx,w,h); header(ctx,'KONUM',w);
@@ -245,7 +250,7 @@ const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
   glow(ctx, HOLO, 14); ctx.fillStyle=HOLO; ctx.textAlign='center'; ctx.font='800 46px -apple-system,system-ui,sans-serif'; ctx.fillText('İSTANBUL', w/2, 560);
   ctx.font='600 24px ui-monospace,Menlo,monospace'; ctx.fillText('41.01° K   28.97° D', w/2, 604); ctx.restore();
 });
-place(pLoc, 56, -0.7, 3.2);
+place(pLoc, 46, -0.6, 2.9);
 
 const panels = [pTitle, pDialog, pStatus, pRadar, pVoice, pLoc];
 setInterval(()=>{ pTitle.redraw(); stats.mem = 58 + Math.round(Math.random()*12); stats.core = 30 + Math.round(Math.random()*5); pStatus.redraw(); }, 1000);
@@ -261,7 +266,7 @@ function updateCamera(){
   else { camera.rotation.set(dragPitch, dragYaw, 0, 'YXZ'); }
 }
 function recenter(){ updateCamera(); const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); hud.rotation.y = Math.atan2(-f.x, -f.z); }
-$('recenter').onclick = recenter;
+$('recenter').onclick = () => { recenter(); SFX.open(); };
 
 // fallback drag-to-look (no gyro)
 let dragging = null;
@@ -284,13 +289,88 @@ function tapAt(x, y){
   const p = hitPanel(x/innerWidth*2-1, -(y/innerHeight)*2+1, camera); if (p) activatePanel(p);
 }
 function activatePanel(p){
-  p.pop = 1;
+  p.pop = 1; SFX.tap();
   if (p === pDialog) toggleListen();
   else if (p === pStatus) ask('Sistem durumunu kısaca raporla.');
   else if (p === pRadar) ask('Etrafı taradın, ne buldun? Kısa ve esprili söyle.');
   else if (p === pLoc) ask('Bulunduğumuz şehir İstanbul hakkında kısa ilginç bir bilgi ver.');
   else if (p === pTitle) ask('Kendini kısaca tanıt.');
   else if (p === pVoice) toggleListen();
+}
+
+// ---------------- sound fx (synthesized) ----------------
+let actx = null;
+function audioUnlock(){ try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){} }
+function tone(f0, f1, dur, type='sine', vol=0.08, delay=0){
+  if (!actx) return; const t0 = actx.currentTime + delay;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(30,f1), t0+dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+function whoosh(dur=0.35, vol=0.06, delay=0){
+  if (!actx) return; const t0 = actx.currentTime + delay; const n = actx.sampleRate*dur;
+  const b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
+  const src = actx.createBufferSource(); src.buffer = b; const f = actx.createBiquadFilter(); f.type='bandpass'; f.Q.value = 2;
+  f.frequency.setValueAtTime(400, t0); f.frequency.exponentialRampToValueAtTime(3000, t0+dur);
+  const g = actx.createGain(); g.gain.value = vol; src.connect(f).connect(g).connect(actx.destination); src.start(t0);
+}
+const SFX = {
+  hover: () => tone(2200, 2600, 0.04, 'sine', 0.03),
+  tap:   () => { tone(880, 880, 0.06, 'square', 0.035); tone(1320, 1320, 0.08, 'square', 0.035, 0.06); },
+  grab:  () => { tone(300, 600, 0.15, 'sawtooth', 0.03); whoosh(0.2, 0.04); },
+  drop:  () => tone(600, 300, 0.12, 'triangle', 0.05),
+  open:  () => { whoosh(0.45, 0.06); tone(400, 1600, 0.35, 'sine', 0.05); },
+  boot:  () => { tone(110, 880, 1.2, 'sawtooth', 0.025); whoosh(1.0, 0.05, 0.2); tone(1760, 1760, 0.15, 'sine', 0.05, 1.3); tone(2640, 2640, 0.2, 'sine', 0.05, 1.45); },
+  listen:() => { tone(660, 990, 0.12, 'sine', 0.06); },
+  answer:() => { tone(990, 660, 0.12, 'sine', 0.05); }
+};
+
+// ---------------- ambient particles ----------------
+(() => {
+  const g = new THREE.BufferGeometry(), N = 500, pos = new Float32Array(N*3);
+  for (let i=0;i<N;i++){ const r = 1.2 + Math.random()*3.2, a = Math.random()*6.283; pos[i*3]=Math.cos(a)*r; pos[i*3+1]=(Math.random()-.5)*3; pos[i*3+2]=Math.sin(a)*r; }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({ color:0x5ff2ff, size:0.018, transparent:true, opacity:0.7, blending:THREE.AdditiveBlending, depthWrite:false });
+  const pts = new THREE.Points(g, m); pts.name = 'dust'; scene.add(pts);
+})();
+
+// ---------------- boot sequence ----------------
+let bootAt = -1;
+function startBoot(){ bootAt = performance.now(); panels.forEach((p,i)=>{ p.bootDelay = [0.15,0,0.45,0.6,0.85,1.0][i] ?? 0.3; }); SFX.boot(); }
+const easeOutBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
+function bootFactor(p, t){
+  if (bootAt < 0) return 0;
+  const k = Math.min(1, Math.max(0, ((t - bootAt)/1000 - (p.bootDelay||0)) / 0.55));
+  if (k < 1){ p.mesh.material.opacity = (Math.random() < 0.3 ? 0.35 : 1) * Math.min(1, k*1.6); } else if (!p.isImage) p.mesh.material.opacity = 1;
+  return k <= 0 ? 0.001 : easeOutBack(k);
+}
+
+// ---------------- lazy follow (HUD stays around you) ----------------
+let follow = true;
+function followTick(){
+  if (!follow || grab) return;
+  const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  const camYaw = Math.atan2(-f.x, -f.z);
+  let diff = camYaw - hud.rotation.y; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+  if (Math.abs(diff) > 0.6 || hud.userData.catching){ hud.userData.catching = Math.abs(diff) > 0.05; hud.rotation.y += diff * 0.06; }
+}
+
+// ---------------- holographic hand skeleton ----------------
+const hcv = $('hands'), hctx = hcv.getContext('2d');
+function sizeHands(){ const d = Math.min(devicePixelRatio, 2); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
+addEventListener('resize', sizeHands); sizeHands();
+const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+function drawHand(lm, mapPt, offsetX, active){
+  const P = lm.map(mapPt);
+  hctx.save(); hctx.translate(offsetX, 0);
+  hctx.shadowColor = active ? AMBER : HOLO; hctx.shadowBlur = 14; hctx.strokeStyle = active ? 'rgba(255,181,71,.9)' : 'rgba(95,242,255,.85)'; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
+  hctx.beginPath(); BONES.forEach(([a,b])=>{ hctx.moveTo(P[a][0],P[a][1]); hctx.lineTo(P[b][0],P[b][1]); }); hctx.stroke();
+  hctx.fillStyle = '#e8fdff';
+  P.forEach((q,i)=>{ const r = [4,8,12,16,20].includes(i) ? 5 : 3; hctx.beginPath(); hctx.arc(q[0],q[1],r,0,6.283); hctx.fill(); });
+  // palm ring
+  const c = P[9]; hctx.strokeStyle = 'rgba(95,242,255,.5)'; hctx.lineWidth = 1.5; hctx.beginPath(); hctx.arc(c[0], c[1], 26, 0, 6.283); hctx.stroke();
+  hctx.restore();
 }
 
 // ---------------- render loop ----------------
@@ -300,7 +380,8 @@ function loop(t){
   sweep += dt*1.6; wt += dt;
   S.level = S.mode==='speaking' ? 0.5+0.5*Math.sin(t*0.02) : (S.mode==='listening' ? 0.4+0.4*Math.sin(t*0.013) : 0);
   pRadar.redraw(); pVoice.redraw();
-  panels.forEach(p => { if (p !== (grab && grab.p)) p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + (p.phase||0))*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = (p.userScale||1) * (1 + 0.08*p.pop + (p.hover ? 0.05 : 0)); p.mesh.scale.set(s,s,s); });
+  panels.forEach(p => { if (p !== (grab && grab.p)) p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + (p.phase||0))*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = (p.userScale||1) * (1 + 0.08*p.pop + (p.hover ? 0.05 : 0)) * bootFactor(p, t); p.mesh.scale.set(s,s,s); });
+  followTick(); const dust = scene.getObjectByName('dust'); if (dust) dust.rotation.y += dt*0.02;
   if (handsOn) handTick(t);
   updateCamera(); renderFrame(); requestAnimationFrame(loop);
 }
@@ -344,7 +425,7 @@ $('vrb').onclick = toggleVR;
 let handsOn = false, lastVT = -1, pinchDown = false, hoverP = null, sm = null, lostAt = 0;
 const cur1 = $('cur1'), cur2 = $('cur2');
 async function toggleHands(){
-  if (handsOn){ handsOn = false; cur1.hidden = cur2.hidden = true; setHover(null); $('hand').classList.remove('on'); $('hand').textContent = '✋ EL'; return; }
+  if (handsOn){ handsOn = false; hctx.clearRect(0,0,innerWidth,innerHeight); cur1.hidden = cur2.hidden = true; setHover(null); $('hand').classList.remove('on'); $('hand').textContent = '✋ EL'; return; }
   if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
   $('hand').textContent = '✋ YÜKLENİYOR…'; S.you=''; S.answer = 'El takibi modeli indiriliyor efendim (yaklaşık 8 MB). Bu ilk seferde biraz sürebilir.'; pDialog.redraw();
   try {
@@ -353,7 +434,7 @@ async function toggleHands(){
   } catch(e){ $('hand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim. Hata: ' + (e && e.message ? e.message : e) + '. Wi-Fi ile tekrar deneyin.'; pDialog.redraw(); }
 }
 $('hand').onclick = toggleHands;
-function setHover(p){ if (hoverP === p) return; if (hoverP) hoverP.hover = false; hoverP = p; if (p) p.hover = true; }
+function setHover(p){ if (hoverP === p) return; if (p) SFX.hover(); if (hoverP) hoverP.hover = false; hoverP = p; if (p) p.hover = true; }
 let grab = null, pinchStart = null;
 const hudInv = new THREE.Quaternion(), tmpDir = new THREE.Vector3();
 function rayDirLocal(nx, ny, cam){
@@ -366,6 +447,7 @@ function handTick(t){
   lastVT = v.currentTime;
   let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
   const lm = r && r.landmarks && r.landmarks[0];
+  hctx.clearRect(0, 0, innerWidth, innerHeight);
   if (!lm){ if (t - lostAt > 300){ cur1.hidden = cur2.hidden = true; setHover(null); pinchDown = false; grab = null; pinchStart = null; sm = null; } return; }
   lostAt = t;
   const va = v.videoWidth / v.videoHeight;
@@ -379,6 +461,8 @@ function handTick(t){
   const ex = (vw - v.videoWidth*sc)/2 + sm.x*v.videoWidth*sc, ey = (H - v.videoHeight*sc)/2 + sm.y*v.videoHeight*sc;
   cur1.hidden = false; cur1.style.left = ex + 'px'; cur1.style.top = ey + 'px';
   if (vr){ cur2.hidden = false; cur2.style.left = (ex + W/2) + 'px'; cur2.style.top = ey + 'px'; } else cur2.hidden = true;
+  const mapPt = q => [ (vw - v.videoWidth*sc)/2 + q.x*v.videoWidth*sc, (H - v.videoHeight*sc)/2 + q.y*v.videoHeight*sc ];
+  drawHand(lm, mapPt, 0, pinchDown); if (vr) drawHand(lm, mapPt, W/2, pinchDown);
   const nx = ex/vw*2-1, ny = -(ey/H)*2+1, cam = vr ? eyes[0] : camera;
   const isPinch = pinchDown ? pinch < 0.5 : pinch < 0.33;
 
@@ -390,7 +474,7 @@ function handTick(t){
     const moved = Math.hypot(ex - pinchStart.x, ey - pinchStart.y);
     if (!grab && pinchStart.p && (t - pinchStart.t > 350 || moved > 30)){
       const p = pinchStart.p;
-      grab = { p, dist: p.mesh.position.length(), scale0: p.userScale || 1, size0: handSize };
+      grab = { p, dist: p.mesh.position.length(), scale0: p.userScale || 1, size0: handSize }; SFX.grab();
     }
     if (grab){
       const dir = rayDirLocal(nx, ny, cam);
@@ -402,7 +486,7 @@ function handTick(t){
     }
   }
   if (pinchDown && !isPinch){
-    if (!grab && pinchStart && pinchStart.p && t - pinchStart.t < 500) activatePanel(pinchStart.p);
+    if (!grab && pinchStart && pinchStart.p && t - pinchStart.t < 500) activatePanel(pinchStart.p); else if (grab) SFX.drop();
     pinchDown = false; grab = null; pinchStart = null;
   }
   const hov = grab ? grab.p : hitPanel(nx, ny, cam);
@@ -439,7 +523,7 @@ function ensureResearchPanels(){
     const iw = infoImg.width*k, ih = infoImg.height*k;
     ctx.globalAlpha = 0.95; ctx.drawImage(infoImg, bx+(bw-iw)/2, by+(bh-ih)/2, iw, ih); ctx.globalAlpha = 1;
   });
-  pImg.mesh.material.blending = THREE.NormalBlending; pImg.mesh.material.opacity = 0.96;
+  pImg.mesh.material.blending = THREE.NormalBlending; pImg.mesh.material.opacity = 0.96; pImg.isImage = true; pInfo.bootDelay = 0; pImg.bootDelay = 0;
   panels.push(pInfo, pImg);
 }
 async function wikiFind(q, lang){
@@ -450,7 +534,7 @@ async function wikiFind(q, lang){
   return { title: s.title || title, text: s.extract || '', img };
 }
 async function research(q){
-  ensureResearchPanels(); info = null; infoImg = null;
+  ensureResearchPanels(); info = null; infoImg = null; SFX.open(); follow = false; setTimeout(()=>{ follow = true; }, 4000);
   spawnInFront(pInfo, -17, 0.0, 2.6); spawnInFront(pImg, 17, 0.0, 2.6);
   pInfo.redraw(); pImg.redraw();
   try {
@@ -486,7 +570,7 @@ function toggleListen(){
   if (!SR){ S.answer = 'Bu tarayıcıda ses tanıma yok efendim. Alttaki kutuya yazabilirsiniz.'; S.you=''; pDialog.redraw(); $('txt').focus(); return; }
   try { speechSynthesis.cancel(); } catch(e){}
   rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = false; finalText = '';
-  rec.onstart = () => { S.mode = 'listening'; S.you = '…'; $('mic').classList.add('on'); $('mic').textContent = 'DUR'; pDialog.redraw(); };
+  rec.onstart = () => { SFX.listen(); S.mode = 'listening'; S.you = '…'; $('mic').classList.add('on'); $('mic').textContent = 'DUR'; pDialog.redraw(); };
   rec.onresult = e => { let txt=''; for (let i=0;i<e.results.length;i++) txt += e.results[i][0].transcript; S.you = txt; if (e.results[e.results.length-1].isFinal) finalText = txt; pDialog.redraw(); };
   rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin ya da yazın.'; } };
   rec.onend = () => { $('mic').classList.remove('on'); $('mic').textContent = 'KONUŞ'; const q = (finalText || (S.you!=='…' ? S.you : '')).trim(); if (q) ask(q); else { S.mode='idle'; if (S.you==='…') S.you=''; pDialog.redraw(); } };
@@ -564,7 +648,7 @@ async function ask(q){
   }
   let q2 = null; const m = a.match(/\[ARA:\s*([^\]]+)\]/i);
   if (m){ q2 = m[1].trim(); a = a.replace(m[0], '').trim() || 'Araştırıyorum efendim.'; }
-  S.answer = a; speak(a);
+  S.answer = a; SFX.answer(); speak(a);
   if (q2) research(q2);
 }
 
@@ -581,6 +665,7 @@ $('go').onclick = async () => {
   try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){}
   // unlock speech on iOS
   try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch(e){}
+  audioUnlock();
   // camera
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:false });
@@ -591,8 +676,8 @@ $('go').onclick = async () => {
   }
   $('start').hidden = true; ['recenter','gear','bar','hand','vrb'].forEach(id=>$(id).hidden=false);
   requestAnimationFrame(loop);
-  setTimeout(()=>{ recenter(); }, 400);
-  setTimeout(()=>{ S.answer = 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?'; speak(S.answer); }, 700);
+  setTimeout(()=>{ recenter(); startBoot(); }, 400);
+  setTimeout(()=>{ S.answer = 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?'; speak(S.answer); }, 2200);
 };
 })();
 </script>
