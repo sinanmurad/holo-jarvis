@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Holo Jarvis</title>
+<style>
+:root{--holo:#5ff2ff;--amber:#ffb547;--ink:#d6ecf0;--glass:rgba(4,16,20,.72)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:-apple-system,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+#gl{touch-action:none}
+.btn{position:fixed;z-index:5;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;padding:10px 14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#recenter{top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
+#gear{top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
+#bar{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:12px max(14px,env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+#mic{width:74px;height:74px;border-radius:50%;border:2px solid var(--holo);background:var(--glass);color:var(--holo);font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.1em;flex:none}
+#mic.on{border-color:var(--amber);color:var(--amber);box-shadow:0 0 24px rgba(255,181,71,.6)}
+#txt{flex:1;max-width:420px;min-width:0;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--ink);border-radius:999px;padding:12px 16px;font:15px -apple-system,system-ui,sans-serif;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#txt::placeholder{color:rgba(214,236,240,.55)}
+.sheet{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:420px;background:#061418;border:1px solid rgba(95,242,255,.5);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.card h1{margin:0;font:700 30px ui-monospace,Menlo,monospace;letter-spacing:.18em;color:var(--holo);text-align:center}
+.card p{margin:0;font-size:15px;line-height:1.5;color:#a9c4ca}
+.card input{background:#000;border:1px solid rgba(95,242,255,.4);color:var(--ink);border-radius:8px;padding:12px;font:14px ui-monospace,Menlo,monospace;width:100%}
+.card button{background:var(--holo);color:#001418;border:0;border-radius:8px;padding:14px;font:700 15px -apple-system,system-ui,sans-serif;letter-spacing:.04em}
+.card .ghost{background:transparent;color:var(--holo);border:1px solid rgba(95,242,255,.45)}
+.card small{color:#6d878e;font-size:12px;line-height:1.4}
+.err{color:var(--amber)!important}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay></video>
+<canvas id="gl"></canvas>
+
+<button class="btn" id="recenter" hidden>⟲ ORTALA</button>
+<button class="btn" id="gear" hidden>⚙ AYAR</button>
+<div id="bar" hidden>
+  <input id="txt" type="text" placeholder="Yaz ya da mikrofona bas…" autocomplete="off" enterkeyhint="send">
+  <button id="mic">KONUŞ</button>
+</div>
+
+<div class="sheet" id="start">
+  <div class="card">
+    <h1>J.A.R.V.I.S.</h1>
+    <p>Kamera açılacak ve holografik paneller etrafında belirecek. Telefonu çevirdikçe paneller havada yerinde kalır. Mikrofona basıp konuş, Jarvis cevap versin.</p>
+    <input id="key0" type="password" placeholder="Groq API anahtarı (gsk_…)" autocomplete="off">
+    <small>Anahtar sadece bu telefonda saklanır, hiçbir yere gönderilmez (yalnızca Groq'a). Anahtarsız da açabilirsin, sonra ⚙ AYAR'dan eklersin.</small>
+    <button id="go">JARVIS'İ BAŞLAT</button>
+    <p id="startErr" class="err" hidden></p>
+  </div>
+</div>
+
+<div class="sheet" id="settings" hidden>
+  <div class="card">
+    <h1 style="font-size:20px">AYARLAR</h1>
+    <input id="key1" type="password" placeholder="Groq API anahtarı (gsk_…)" autocomplete="off">
+    <small>console.groq.com → API Keys → Create API Key</small>
+    <button id="save">KAYDET</button>
+    <button class="ghost" id="close">KAPAT</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const HOLO = '#5ff2ff', AMBER = '#ffb547';
+const store = { get(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+$('key0').value = store.get('groqKey'); $('key1').value = store.get('groqKey');
+
+// ---------------- state ----------------
+const S = { mode:'idle', you:'', answer:'Bugün ne inşa ediyoruz, efendim?', level:0 };
+const history = [];
+
+// ---------------- three.js ----------------
+const renderer = new THREE.WebGLRenderer({ canvas:$('gl'), alpha:true, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.05, 50);
+const hud = new THREE.Group(); scene.add(hud);
+function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+// ---------------- canvas drawing helpers ----------------
+function glow(ctx, c=HOLO, b=14){ ctx.shadowColor = c; ctx.shadowBlur = b; }
+function frame(ctx, w, h, c=HOLO){
+  ctx.save(); glow(ctx, c, 10);
+  ctx.fillStyle = 'rgba(95,242,255,0.07)'; ctx.fillRect(8,8,w-16,h-16);
+  ctx.strokeStyle = 'rgba(95,242,255,0.45)'; ctx.lineWidth = 2; ctx.strokeRect(8,8,w-16,h-16);
+  ctx.strokeStyle = c; ctx.lineWidth = 5; const L = 56;
+  [[8,8,1,1],[w-8,8,-1,1],[8,h-8,1,-1],[w-8,h-8,-1,-1]].forEach(([x,y,sx,sy])=>{ ctx.beginPath(); ctx.moveTo(x+L*sx,y); ctx.lineTo(x,y); ctx.lineTo(x,y+L*sy); ctx.stroke(); });
+  ctx.restore();
+}
+function header(ctx, t, w, right, rightColor){
+  ctx.save(); glow(ctx); ctx.fillStyle = HOLO; ctx.font = '700 34px -apple-system,system-ui,sans-serif'; ctx.textBaseline = 'top';
+  ctx.fillText(t, 36, 30);
+  if (right){ ctx.fillStyle = rightColor || HOLO; glow(ctx, rightColor || HOLO); ctx.font = '700 24px ui-monospace,Menlo,monospace'; ctx.textAlign = 'right'; ctx.fillText(right, w-36, 36); }
+  ctx.globalAlpha = .6; ctx.fillRect(36, 80, w-72, 2); ctx.restore();
+}
+function wrap(ctx, text, maxW){
+  const out = []; for (const para of String(text).split('\n')){
+    let line = ''; for (const word of para.split(/\s+/)){ const t = line ? line+' '+word : word; if (ctx.measureText(t).width > maxW && line){ out.push(line); line = word; } else line = t; }
+    out.push(line);
+  } return out;
+}
+function makePanel(w, h, worldW, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), mat);
+  const p = { c, ctx:c.getContext('2d'), tex, mesh, w, h, draw, redraw(){ p.ctx.clearRect(0,0,w,h); draw(p.ctx,w,h); tex.needsUpdate = true; } };
+  mesh.userData.panel = p; p.redraw(); hud.add(mesh); return p;
+}
+function place(p, angDeg, y, r=2.1){ const a = angDeg*Math.PI/180; p.mesh.position.set(Math.sin(a)*r, y, -Math.cos(a)*r); p.mesh.lookAt(0, y, 0); p.baseY = y; p.phase = Math.random()*6; }
+
+const pad = n => String(n).padStart(2,'0');
+const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+// ---------------- panels ----------------
+const pTitle = makePanel(1024, 420, 1.15, (ctx,w,h)=>{
+  frame(ctx,w,h); const d = new Date();
+  ctx.save(); glow(ctx, HOLO, 22); ctx.fillStyle = HOLO; ctx.textAlign = 'center';
+  ctx.font = '800 112px -apple-system,system-ui,sans-serif'; ctx.fillText('J.A.R.V.I.S.', w/2, 150);
+  ctx.globalAlpha=.8; ctx.fillRect(170, 190, w-340, 3); ctx.globalAlpha=1;
+  ctx.font = '500 42px -apple-system,system-ui,sans-serif'; ctx.fillText('Hoş geldiniz, efendim.', w/2, 262);
+  ctx.font = '600 30px ui-monospace,Menlo,monospace';
+  ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}   ·   ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`, w/2, 350);
+  ctx.restore();
+});
+place(pTitle, 0, 0.78, 2.3);
+
+const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
+  frame(ctx,w,h, S.mode==='listening' ? AMBER : HOLO);
+  const st = {idle:['● ÇEVRİMİÇİ',HOLO], listening:['● DİNLİYORUM',AMBER], thinking:['◌ İŞLENİYOR',AMBER], speaking:['▶ KONUŞUYOR',HOLO]}[S.mode];
+  header(ctx,'JARVIS',w,st[0],st[1]);
+  ctx.save(); glow(ctx, HOLO, 10); ctx.textBaseline = 'top';
+  let y = 110;
+  if (S.you){
+    ctx.fillStyle = 'rgba(214,236,240,.85)'; ctx.font = '500 30px -apple-system,system-ui,sans-serif';
+    const yl = wrap(ctx, 'Siz: ' + S.you, w-100).slice(0,2); yl.forEach((l,i)=>ctx.fillText(l, 50, y+i*40)); y += yl.length*40 + 24;
+  }
+  ctx.fillStyle = HOLO; ctx.font = `700 ${S.answer.length > 120 ? 38 : 48}px -apple-system,system-ui,sans-serif`;
+  const lh = S.answer.length > 120 ? 50 : 62;
+  const lines = wrap(ctx, S.answer, w-100); const maxL = Math.floor((h-130-y)/lh);
+  if (lines.length > maxL){ lines.length = maxL; lines[maxL-1] = lines[maxL-1].replace(/\s*\S*$/,'') + ' …'; }
+  lines.forEach((l,i)=>ctx.fillText(l, 50, y+i*lh));
+  ctx.strokeStyle = 'rgba(95,242,255,.7)'; ctx.lineWidth = 3; ctx.strokeRect(50, h-104, w-100, 62);
+  ctx.font = '600 26px ui-monospace,Menlo,monospace'; ctx.fillStyle = 'rgba(214,236,240,.85)';
+  ctx.fillText(S.mode==='listening' ? 'Sizi dinliyorum…' : 'Panele dokun ya da KONUŞ\'a bas ▌', 74, h-88);
+  ctx.restore();
+});
+place(pDialog, 0, 0.0, 2.0);
+
+const stats = { power:100, core:32, net:92, mem:64 };
+const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
+  frame(ctx,w,h); header(ctx,'SİSTEM DURUMU',w);
+  const rows = [['GÜÇ',stats.power/100,'%'+stats.power],['ÇEKİRDEK',stats.core/100,stats.core+'°C'],['AĞ',stats.net/100, navigator.onLine?'Bağlı':'Yok'],['HOLOGRAM',1,'Aktif'],['BELLEK',stats.mem/100,'%'+stats.mem]];
+  ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline='top';
+  rows.forEach(([n,v,t],i)=>{ const y = 116+i*98;
+    ctx.fillStyle='rgba(214,236,240,.9)'; ctx.font='600 26px ui-monospace,Menlo,monospace'; ctx.textAlign='left'; ctx.fillText(n,40,y);
+    ctx.fillStyle=HOLO; ctx.font='700 26px -apple-system,system-ui,sans-serif'; ctx.textAlign='right'; ctx.fillText(t,w-40,y);
+    ctx.strokeStyle='rgba(95,242,255,.6)'; ctx.lineWidth=2; ctx.strokeRect(40,y+42,w-80,22);
+    const segs = Math.round(36*v); for(let s=0;s<segs;s++) ctx.fillRect(44+s*20,y+46,14,14);
+  }); ctx.restore();
+});
+place(pStatus, -38, 0.05, 2.1);
+
+let sweep = 0; const blips = Array.from({length:7},()=>({a:Math.random()*6.28,r:30+Math.random()*190}));
+const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
+  frame(ctx,w,h); header(ctx,'TARAMA',w);
+  const cx=w/2, cy=h/2+30, R=220; ctx.save(); glow(ctx, HOLO, 8);
+  ctx.strokeStyle='rgba(95,242,255,.6)'; ctx.lineWidth=2;
+  [1,.72,.45,.18].forEach(k=>{ctx.beginPath();ctx.arc(cx,cy,R*k,0,6.283);ctx.stroke();});
+  ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy); ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R); ctx.stroke();
+  for(let k=0;k<40;k++){ const a = sweep - k*0.035; ctx.strokeStyle = `rgba(95,242,255,${(0.75*(1-k/40)).toFixed(3)})`; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(a), cy+R*Math.sin(a)); ctx.stroke(); }
+  ctx.fillStyle = AMBER; glow(ctx, AMBER, 12);
+  blips.forEach(b=>{ const d = ((sweep - b.a) % 6.283 + 6.283) % 6.283; const al = Math.max(0.15, 1 - d/4); ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(cx+b.r*Math.cos(b.a), cy+b.r*Math.sin(b.a), 7, 0, 6.283); ctx.fill(); });
+  ctx.restore();
+});
+place(pRadar, 38, 0.05, 2.1);
+
+let wt = 0;
+const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
+  frame(ctx,w,h); const live = S.mode==='listening' || S.mode==='speaking';
+  header(ctx,'SES ANALİZİ',w, live ? '● CANLI' : 'BEKLEMEDE', live ? AMBER : HOLO);
+  ctx.save(); glow(ctx, HOLO, 10); ctx.strokeStyle = HOLO; ctx.lineWidth = 4; ctx.beginPath();
+  const amp = live ? 70 + 40*S.level : 12;
+  for (let x=40; x<=w-40; x+=4){ const t=(x-40)/(w-80); const y = 240 + Math.sin(t*Math.PI)*amp*Math.sin(x*0.09+wt*8)*Math.cos(x*0.021-wt*3); x===40?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke(); ctx.fillStyle = 'rgba(95,242,255,.55)';
+  for (let x=40; x<w-40; x+=24){ const hh = live ? 8+Math.abs(Math.sin(x*0.3+wt*10))*40 : 6; ctx.fillRect(x, h-40-hh, 14, hh); }
+  ctx.restore();
+});
+place(pVoice, -68, -0.45, 2.1);
+
+const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
+  frame(ctx,w,h); header(ctx,'KONUM',w);
+  ctx.save(); ctx.strokeStyle='rgba(95,242,255,.35)'; ctx.lineWidth=2;
+  for(let r=0;r<8;r++) for(let c=0;c<9;c++){ const x=70+c*58+(r%2?29:0), y=130+r*48; if(x>590) continue; ctx.beginPath(); for(let k=0;k<6;k++){const a=(60*k+30)*Math.PI/180; const px=x+18*Math.cos(a), py=y+18*Math.sin(a); k?ctx.lineTo(px,py):ctx.moveTo(px,py);} ctx.closePath(); ctx.stroke(); }
+  glow(ctx, AMBER, 12); ctx.strokeStyle=AMBER; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(w/2,330,30,0,6.283); ctx.stroke();
+  ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(w/2,270); ctx.lineTo(w/2,390); ctx.moveTo(w/2-70,330); ctx.lineTo(w/2+70,330); ctx.stroke();
+  glow(ctx, HOLO, 14); ctx.fillStyle=HOLO; ctx.textAlign='center'; ctx.font='800 46px -apple-system,system-ui,sans-serif'; ctx.fillText('İSTANBUL', w/2, 560);
+  ctx.font='600 24px ui-monospace,Menlo,monospace'; ctx.fillText('41.01° K   28.97° D', w/2, 604); ctx.restore();
+});
+place(pLoc, 68, -0.45, 2.1);
+
+const panels = [pTitle, pDialog, pStatus, pRadar, pVoice, pLoc];
+setInterval(()=>{ pTitle.redraw(); stats.mem = 58 + Math.round(Math.random()*12); stats.core = 30 + Math.round(Math.random()*5); pStatus.redraw(); }, 1000);
+
+// ---------------- device orientation ----------------
+const zee = new THREE.Vector3(0,0,1), eul = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
+let ori = null, gotOri = false;
+addEventListener('deviceorientation', e => { if (e.alpha == null) return; ori = e; gotOri = true; });
+function screenAngle(){ return ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * Math.PI/180; }
+let dragYaw = 0, dragPitch = 0;
+function updateCamera(){
+  if (ori){ const d = Math.PI/180; eul.set(ori.beta*d, ori.alpha*d, -ori.gamma*d, 'YXZ'); camera.quaternion.setFromEuler(eul); camera.quaternion.multiply(q1); camera.quaternion.multiply(q0.setFromAxisAngle(zee, -screenAngle())); }
+  else { camera.rotation.set(dragPitch, dragYaw, 0, 'YXZ'); }
+}
+function recenter(){ updateCamera(); const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); hud.rotation.y = Math.atan2(-f.x, -f.z); }
+$('recenter').onclick = recenter;
+
+// fallback drag-to-look (no gyro)
+let dragging = null;
+$('gl').addEventListener('pointerdown', e => { dragging = { x:e.clientX, y:e.clientY, moved:false }; });
+$('gl').addEventListener('pointermove', e => { if (!dragging || gotOri) return; const dx = e.clientX-dragging.x, dy = e.clientY-dragging.y; if (Math.abs(dx)+Math.abs(dy) > 4) dragging.moved = true; dragYaw += dx*0.005; dragPitch = Math.max(-1.2, Math.min(1.2, dragPitch + dy*0.005)); dragging.x = e.clientX; dragging.y = e.clientY; });
+$('gl').addEventListener('pointerup', e => { const d = dragging; dragging = null; if (d && !d.moved) tapAt(e.clientX, e.clientY); });
+
+// tap on a panel
+const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
+function tapAt(x, y){
+  v2.set(x/innerWidth*2-1, -(y/innerHeight)*2+1); ray.setFromCamera(v2, camera);
+  const hit = ray.intersectObjects(panels.map(p=>p.mesh))[0]; if (!hit) return;
+  const p = hit.object.userData.panel;
+  p.pop = 1;
+  if (p === pDialog) toggleListen();
+  else if (p === pStatus) ask('Sistem durumunu kısaca raporla.');
+  else if (p === pRadar) ask('Etrafı taradın, ne buldun? Kısa ve esprili söyle.');
+  else if (p === pLoc) ask('Bulunduğumuz şehir İstanbul hakkında kısa ilginç bir bilgi ver.');
+  else if (p === pTitle) ask('Kendini kısaca tanıt.');
+  else if (p === pVoice) toggleListen();
+}
+
+// ---------------- render loop ----------------
+let last = performance.now();
+function loop(t){
+  const dt = Math.min(.05, (t-last)/1000); last = t;
+  sweep += dt*1.6; wt += dt;
+  S.level = S.mode==='speaking' ? 0.5+0.5*Math.sin(t*0.02) : (S.mode==='listening' ? 0.4+0.4*Math.sin(t*0.013) : 0);
+  pRadar.redraw(); pVoice.redraw();
+  panels.forEach(p => { p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + p.phase)*0.015; if (p.pop){ p.pop = Math.max(0, p.pop - dt*3); const s = 1 + 0.08*p.pop; p.mesh.scale.set(s,s,s); } });
+  updateCamera(); renderer.render(scene, camera); requestAnimationFrame(loop);
+}
+
+// ---------------- voice out ----------------
+let trVoice = null;
+function pickVoice(){ const vs = speechSynthesis.getVoices(); trVoice = vs.find(v=>/^tr/i.test(v.lang) && /enhanced|premium/i.test(v.name)) || vs.find(v=>/^tr/i.test(v.lang)) || null; }
+if ('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text){
+  if (!('speechSynthesis' in window)) { setTimeout(()=>{ S.mode='idle'; pDialog.redraw(); }, 3000); return; }
+  speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'tr-TR'; if (trVoice) u.voice = trVoice; u.rate = 1.02; u.pitch = 0.9;
+  u.onend = u.onerror = () => { if (S.mode==='speaking'){ S.mode='idle'; pDialog.redraw(); } };
+  S.mode = 'speaking'; pDialog.redraw(); speechSynthesis.speak(u);
+}
+
+// ---------------- voice in ----------------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, finalText = '';
+function toggleListen(){
+  if (S.mode === 'listening'){ rec && rec.stop(); return; }
+  if (!SR){ S.answer = 'Bu tarayıcıda ses tanıma yok efendim. Alttaki kutuya yazabilirsiniz.'; S.you=''; pDialog.redraw(); $('txt').focus(); return; }
+  try { speechSynthesis.cancel(); } catch(e){}
+  rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = false; finalText = '';
+  rec.onstart = () => { S.mode = 'listening'; S.you = '…'; $('mic').classList.add('on'); $('mic').textContent = 'DUR'; pDialog.redraw(); };
+  rec.onresult = e => { let txt=''; for (let i=0;i<e.results.length;i++) txt += e.results[i][0].transcript; S.you = txt; if (e.results[e.results.length-1].isFinal) finalText = txt; pDialog.redraw(); };
+  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin ya da yazın.'; } };
+  rec.onend = () => { $('mic').classList.remove('on'); $('mic').textContent = 'KONUŞ'; const q = (finalText || (S.you!=='…' ? S.you : '')).trim(); if (q) ask(q); else { S.mode='idle'; if (S.you==='…') S.you=''; pDialog.redraw(); } };
+  try { rec.start(); } catch(e){ S.mode='idle'; pDialog.redraw(); }
+}
+$('mic').onclick = toggleListen;
+$('txt').addEventListener('keydown', e => { if (e.key === 'Enter'){ const q = e.target.value.trim(); e.target.value=''; e.target.blur(); if (q) ask(q); } });
+
+// ---------------- brain (Groq) ----------------
+const SYS = 'Sen J.A.R.V.I.S.\'sin: kullanıcının kişisel yapay zekâ asistanı. Odada holografik paneller olarak görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma, bilmediğini söyle.';
+const MODELS = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
+async function groq(q){
+  const key = store.get('groqKey'); if (!key) throw { code:'nokey' };
+  const messages = [{ role:'system', content: SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.` }, ...history.slice(-8), { role:'user', content:q }];
+  for (const model of MODELS){
+    let r; try { r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body: JSON.stringify({ model, messages, temperature:0.7, max_tokens:400 }) }); }
+    catch(e){ throw { code:'net' }; }
+    if (r.ok){ const j = await r.json(); const t = (j.choices?.[0]?.message?.content || '').replace(/[*#_`]/g,'').trim(); if (t) return t; continue; }
+    if (r.status === 401) throw { code:'badkey' };
+    if (r.status === 429) throw { code:'rate' };
+    continue; // model missing/decommissioned → try next
+  }
+  throw { code:'nomodel' };
+}
+async function ask(q){
+  S.you = q; S.mode = 'thinking'; S.answer = '…'; pDialog.redraw(); pDialog.pop = 1;
+  let a;
+  try { a = await groq(q); history.push({ role:'user', content:q }, { role:'assistant', content:a }); }
+  catch(e){
+    a = { nokey:'Beynimi bağlamak için Groq API anahtarı gerekiyor efendim. Sağ üstteki AYAR\'a dokunun.', badkey:'API anahtarı geçersiz görünüyor efendim. AYAR\'dan kontrol edin.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Groq modellerine ulaşamadım efendim.' }[e.code] || 'Bir sorun oluştu efendim.';
+    if (e.code === 'nokey' || e.code === 'badkey') setTimeout(()=>{ $('settings').hidden = false; }, 1500);
+  }
+  S.answer = a; speak(a);
+}
+
+// ---------------- settings ----------------
+$('gear').onclick = () => { $('key1').value = store.get('groqKey'); $('settings').hidden = false; };
+$('close').onclick = () => { $('settings').hidden = true; };
+$('save').onclick = () => { store.set('groqKey', $('key1').value.trim()); $('settings').hidden = true; S.answer = 'Anahtar kaydedildi. Beyin çevrimiçi, efendim.'; S.you=''; speak(S.answer); };
+
+// ---------------- start ----------------
+$('go').onclick = async () => {
+  const k = $('key0').value.trim(); if (k) store.set('groqKey', k);
+  const errEl = $('startErr'); errEl.hidden = true;
+  // motion permission (iOS) — must be inside the tap
+  try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){}
+  // unlock speech on iOS
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch(e){}
+  // camera
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:false });
+    $('cam').srcObject = stream; await $('cam').play().catch(()=>{});
+  } catch(e){
+    errEl.textContent = 'Kamera açılamadı. Safari\'de açtığından ve kamera iznini verdiğinden emin ol. Kamera olmadan siyah arka planla devam ediyorum.'; errEl.hidden = false;
+    await new Promise(r=>setTimeout(r, 1800));
+  }
+  $('start').hidden = true; ['recenter','gear','bar'].forEach(id=>$(id).hidden=false);
+  requestAnimationFrame(loop);
+  setTimeout(()=>{ recenter(); }, 400);
+  setTimeout(()=>{ S.answer = store.get('groqKey') ? 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?' : 'Holografik arayüz hazır efendim. Konuşabilmem için AYAR\'dan Groq anahtarını ekleyin.'; speak(S.answer); }, 700);
+};
+})();
+</script>
+</body>
+</html>
