@@ -62,7 +62,7 @@ body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 <div class="sheet" id="start">
   <div class="card">
     <h1>J.A.R.V.I.S.</h1>
-    <p><b>Masa modu:</b> Telefonu masaya dik koy, ön kamera seni görsün. Ellerini kaldır: bir elle çimdikle ve taşı, iki elle çimdikleyip aç-kapa ile büyüt-küçült. Konuşmak için “Jarvis, …” de.</p>
+    <p><b>Masa modu:</b> Telefonu dik koy, ön kamera seni görsün.<br>✋ <b>Elini açık tut ve bekle</b> → seçer (halka dolar)<br>✊ <b>Yumruk yap</b> → paneli tutar, elinle taşı, elini aç → bırak<br>✊✊ <b>İki yumruk</b> → aç/kapa ile büyüt/küçült<br>🎙 <b>“Jarvis, …”</b> diye konuş</p>
     <div class="row2">
       <button id="goDesk">MASA MODU</button>
       <button id="goRoom" class="ghost">ODA (AR) MODU</button>
@@ -110,6 +110,8 @@ window.HJHands = {
 <script>
 (() => {
 const $ = id => document.getElementById(id);
+window.addEventListener('error', e => { try { S.you = ''; S.answer = 'Hata yakalandı: ' + (e.message || 'bilinmeyen'); pDialog.redraw(); } catch(_){} });
+window.addEventListener('unhandledrejection', e => { e.preventDefault && e.preventDefault(); });
 const HOLO = '#5ff2ff', AMBER = '#ffb547', INK = 'rgba(214,236,240,.92)';
 const store = {
   get(k, d=''){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch(e){ return d; } },
@@ -136,10 +138,12 @@ let notes = []; try { notes = JSON.parse(store.get('notes','[]')) || []; } catch
 const saveNotes = () => store.set('notes', JSON.stringify(notes.slice(0, 20)));
 let weather = null;
 let listenOn = false;
+let pDialogHot = false;
 
 // ============ THREE ============
-const renderer = new THREE.WebGLRenderer({ canvas:$('gl'), alpha:true, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setClearColor(0x000000, 0);
+const renderer = new THREE.WebGLRenderer({ canvas:$('gl'), alpha:true, antialias:false, powerPreference:'low-power' });
+$('gl').addEventListener('webglcontextlost', e => { e.preventDefault(); S.answer = 'Grafik belleği doldu efendim, sayfa yenileniyor…'; setTimeout(() => location.reload(), 1500); });
+renderer.setPixelRatio(1); renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.05, 50);
 const hud = new THREE.Group(); scene.add(hud);
@@ -168,7 +172,7 @@ function wrap(ctx, text, maxW){
 }
 function clip(lines, n){ n = Math.max(1, n); if (lines.length > n){ lines.length = n; lines[n-1] = lines[n-1].replace(/\s*\S*$/,'') + ' …'; } return lines; }
 
-const panels = [];
+const panels = []; let pidSeq = 0;
 function makePanel(w, h, draw, opts={}){
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
@@ -177,7 +181,7 @@ function makePanel(w, h, draw, opts={}){
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, h/w), mat);
   const p = Object.assign({ c, ctx:c.getContext('2d'), tex, mesh, w, h, draw, fit:1, user:1, pop:0, born:performance.now() }, opts);
   p.redraw = () => { p.ctx.clearRect(0,0,w,h); draw(p.ctx,w,h,p); tex.needsUpdate = true; };
-  mesh.userData.panel = p; panels.push(p); hud.add(mesh); p.redraw(); return p;
+  p.id = ++pidSeq; mesh.userData.panel = p; panels.push(p); hud.add(mesh); p.redraw(); return p;
 }
 function removePanel(p){ hud.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); p.tex.dispose(); const i = panels.indexOf(p); if (i >= 0) panels.splice(i,1); }
 const pad = n => String(n).padStart(2,'0');
@@ -211,9 +215,16 @@ const pDialog = makePanel(1024, 600, (ctx,w,h)=>{
   if (S.you){ ctx.fillStyle = 'rgba(214,236,240,.8)'; ctx.font = '500 28px -apple-system,system-ui,sans-serif';
     const yl = clip(wrap(ctx, 'Sen: ' + S.you, w-90), 2); yl.forEach((l,i)=>ctx.fillText(l, 46, y+i*38)); y += yl.length*38 + 20; }
   const big = S.answer.length < 110; ctx.fillStyle = HOLO; ctx.font = `700 ${big ? 46 : 36}px -apple-system,system-ui,sans-serif`;
-  const lh = big ? 58 : 46; const lines = clip(wrap(ctx, S.answer, w-90), Math.floor((h-60-y)/lh));
-  lines.forEach((l,i)=>ctx.fillText(l, 46, y+i*lh)); ctx.restore();
-});
+  const lh = big ? 58 : 46; const lines = clip(wrap(ctx, S.answer, w-90), Math.floor((h-120-y)/lh));
+  lines.forEach((l,i)=>ctx.fillText(l, 46, y+i*lh));
+  const on = S.mode === 'listening'; ctx.shadowBlur = 0;
+  ctx.fillStyle = on ? 'rgba(255,181,71,.25)' : (pDialogHot ? 'rgba(95,242,255,.28)' : 'rgba(95,242,255,.12)'); ctx.fillRect(w-330, h-104, 290, 70);
+  ctx.strokeStyle = on ? AMBER : HOLO; ctx.lineWidth = 3; ctx.strokeRect(w-330, h-104, 290, 70);
+  ctx.fillStyle = on ? AMBER : HOLO; ctx.font = '800 30px -apple-system,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(on ? '● DİNLİYORUM' : '● KONUŞ', w-185, h-86);
+  ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(214,236,240,.55)'; ctx.font = '500 20px ui-monospace,Menlo,monospace'; ctx.fillText('Elini açık tut ve bekle = seç  ·  Yumruk = tut', 46, h-74);
+  ctx.restore();
+}, { targetAt(uv){ const py = (1-uv.y)*600; return (uv.x > (1024-340)/1024 && py > 600-112) ? { id:'mic', ms:800 } : null; },
+     onTarget(){ startListen('once'); } });
 
 function rowAt(p, uv){ const py = (1-uv.y)*p.rows.H; const i = Math.floor((py - p.rows.top)/p.rows.h); return (i >= 0 && i < p.rows.n) ? i : -1; }
 
@@ -226,10 +237,10 @@ const pProj = makePanel(760, 720, (ctx,w,h,p)=>{
     ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(214,236,240,.7)'; ctx.font = '400 22px -apple-system,system-ui,sans-serif'; ctx.fillText(pr.desc, 40, y+48);
     ctx.fillStyle = 'rgba(95,242,255,.25)'; ctx.fillRect(40, y+88, w-80, 1);
   }); ctx.restore();
-}, { hoverRow:-1, rows:{ top:100, h:100, n:PROJECTS.length, H:720 }, onTap(uv){
-  const i = rowAt(this, uv); if (i < 0) return; const pr = PROJECTS[i];
-  ask(`${pr.name} projem için bugün odaklanmam gereken tek somut adımı söyle. Proje: ${pr.desc}.`);
-}});
+}, { hoverRow:-1, rows:{ top:100, h:100, n:PROJECTS.length, H:720 },
+  targetAt(uv){ const i = rowAt(this, uv); return i < 0 ? null : { id:'row'+i, ms:1000, row:i }; },
+  onTarget(id){ const pr = PROJECTS[+id.slice(3)]; if (pr) ask(`${pr.name} projem için bugün odaklanmam gereken tek somut adımı söyle. Proje: ${pr.desc}.`); }
+});
 
 const pNotes = makePanel(760, 720, (ctx,w,h,p)=>{
   frame(ctx,w,h); header(ctx,'NOTLAR',w,'+ EKLE', AMBER);
@@ -244,20 +255,17 @@ const pNotes = makePanel(760, 720, (ctx,w,h,p)=>{
     clip(wrap(ctx, n.t, w-150), 2).forEach((s,k)=>ctx.fillText(s, 96, y+10+k*36));
     if (n.done){ ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,181,71,.8)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('tekrar dokun → sil', w-250, y+64); }
   }); ctx.restore();
-}, { hoverRow:-1, rows:{ top:100, h:100, n:6, H:720 }, onTap(uv){
-  const py = (1-uv.y)*720;
-  if (py < 90 && uv.x > 0.6){ startListen('note'); return; }
-  const i = rowAt(this, uv); if (i < 0 || i >= notes.length) return;
-  if (notes[i].done) notes.splice(i,1); else notes[i].done = true;
-  saveNotes(); this.redraw();
-}});
+}, { hoverRow:-1, rows:{ top:100, h:100, n:6, H:720 },
+  targetAt(uv){ const py = (1-uv.y)*720; if (py < 90 && uv.x > 0.6) return { id:'add', ms:900 }; const i = rowAt(this, uv); return (i < 0 || i >= notes.length) ? null : { id:'row'+i, ms:1100, row:i }; },
+  onTarget(id){ if (id === 'add'){ startListen('note'); return; } const i = +id.slice(3); if (!notes[i]) return; if (notes[i].done) notes.splice(i,1); else notes[i].done = true; saveNotes(); this.redraw(); }
+});
 
 // ============ LAYOUT ============
 function setPos(p, x, y, widthWorld){ p.mesh.position.set(x, y, -D); p.fit = widthWorld; p.baseY = y; }
 function layout(){
   const { w, h } = viewSize(); const portrait = camera.aspect < 1;
   const L = portrait ? {
-    top:[0, h*0.36, w*0.94], dialog:[0, h*0.07, w*0.94], proj:[-w*0.245, -h*0.27, w*0.47], notes:[w*0.245, -h*0.27, w*0.47]
+    top:[0, h*0.27, w*0.80], dialog:[0, h*0.04, w*0.94], proj:[-w*0.235, -h*0.24, w*0.45], notes:[w*0.235, -h*0.24, w*0.45]
   } : {
     top:[0, h*0.38, w*0.56], dialog:[0, h*0.0, w*0.44], proj:[-w*0.36, -h*0.04, w*0.25], notes:[w*0.36, -h*0.04, w*0.25]
   };
@@ -290,7 +298,7 @@ function infoPanel(info){
     let y = 100 + tl.length*50 + 16; ctx.shadowBlur = 0; ctx.fillStyle = INK; ctx.font = '400 27px -apple-system,system-ui,sans-serif';
     clip(wrap(ctx, info.text, w-80), Math.floor((h-70-y)/37)).forEach((l,i)=>ctx.fillText(l, 40, y+i*37));
     ctx.fillStyle = 'rgba(214,236,240,.5)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('Kaynak: Vikipedi', 40, h-44); ctx.restore();
-  }, { transient:true, onTap(uv){ if ((1-uv.y)*700 < 90 && uv.x > 0.6) clearResearch(); } });
+  }, { transient:true, targetAt(uv){ return ((1-uv.y)*700 < 90 && uv.x > 0.6) ? { id:'close', ms:900 } : null; }, onTarget(){ clearResearch(); } });
 }
 function imagePanel(src){
   const p = makePanel(800, 800, (ctx,w,h,pp)=>{
@@ -298,7 +306,7 @@ function imagePanel(src){
     const im = pp.img, k = Math.min((w-24)/im.width, (h-24)/im.height), iw = im.width*k, ih = im.height*k;
     ctx.drawImage(im, (w-iw)/2, (h-ih)/2, iw, ih);
     ctx.save(); glow(ctx, HOLO, 14); ctx.strokeStyle = HOLO; ctx.lineWidth = 4; ctx.strokeRect((w-iw)/2, (h-ih)/2, iw, ih); ctx.restore();
-  }, { transient:true, normal:true, onTap(){
+  }, { transient:true, normal:true, targetAt(){ return { id:'focus', ms:1500 }; }, onTarget(){
     this.focus = !this.focus;
     if (this.focus){ this.prev = { x:this.mesh.position.x, y:this.mesh.position.y, user:this.user }; this.mesh.position.set(0, 0, -D + 0.3); this.user = 1.8; }
     else if (this.prev){ this.mesh.position.set(this.prev.x, this.prev.y, -D + 0.15); this.user = this.prev.user; }
@@ -351,7 +359,7 @@ async function openCamera(){
   if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
   const v = $('cam');
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:960 }, height:{ ideal:540 }, frameRate:{ ideal:30, max:30 } }, audio:false });
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:640 }, height:{ ideal:480 }, frameRate:{ ideal:30, max:30 } }, audio:false });
     v.srcObject = stream; await v.play().catch(()=>{});
   } catch(e){ return false; }
   v.classList.toggle('mirror', MODE === 'desk'); return true;
@@ -420,20 +428,21 @@ function bootFactor(p, t){
 
 // ============ HANDS ============
 const hcv = $('hands'), hctx = hcv.getContext('2d');
-function sizeHands(){ const d = Math.min(devicePixelRatio, 1.5); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
+function sizeHands(){ const d = 1; hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
 const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function drawHand(P, state){
   const c = state === 'idle' ? HOLO : AMBER;
-  hctx.save(); hctx.shadowColor = c; hctx.shadowBlur = stage ? 26 : 14; if (stage) hctx.lineWidth = 4; hctx.strokeStyle = c; hctx.globalAlpha = .85; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
+  hctx.save(); hctx.shadowColor = c; hctx.shadowBlur = stage ? 26 : 14; hctx.strokeStyle = c; hctx.globalAlpha = .85; hctx.lineWidth = stage ? 4 : 2.5; hctx.lineCap = 'round';
   hctx.beginPath(); BONES.forEach(([a,b])=>{ hctx.moveTo(P[a][0],P[a][1]); hctx.lineTo(P[b][0],P[b][1]); }); hctx.stroke();
   hctx.globalAlpha = 1; hctx.fillStyle = '#e8fdff';
   P.forEach((q,i)=>{ hctx.beginPath(); hctx.arc(q[0],q[1],[4,8,12,16,20].includes(i)?5:3,0,6.283); hctx.fill(); });
   hctx.restore();
 }
-function drawCursor(x, y, state){
+function drawCursor(x, y, state, prog){
   hctx.save(); const c = state === 'idle' ? HOLO : AMBER; hctx.shadowColor = c; hctx.shadowBlur = 18; hctx.strokeStyle = c; hctx.lineWidth = 3;
-  hctx.beginPath(); hctx.arc(x, y, state === 'idle' ? 18 : 11, 0, 6.283); hctx.stroke();
-  hctx.fillStyle = c; hctx.beginPath(); hctx.arc(x, y, 4, 0, 6.283); hctx.fill(); hctx.restore();
+  hctx.beginPath(); hctx.arc(x, y, state === 'idle' ? 22 : 14, 0, 6.283); hctx.stroke();
+  if (prog > 0){ hctx.strokeStyle = AMBER; hctx.shadowColor = AMBER; hctx.lineWidth = 6; hctx.beginPath(); hctx.arc(x, y, 30, -Math.PI/2, -Math.PI/2 + prog*6.283); hctx.stroke(); }
+  hctx.fillStyle = c; hctx.beginPath(); hctx.arc(x, y, 5, 0, 6.283); hctx.fill(); hctx.restore();
 }
 let handsOn = false, lastVT = -1, lastDet = 0, detBusy = false;
 const slots = [];
@@ -453,7 +462,7 @@ function screenToPlane(sx, sy, z){
 let hoverP = null;
 function setHover(p, uv){
   if (hoverP !== p){ if (hoverP){ hoverP.hover = false; if (hoverP.rows){ hoverP.hoverRow = -1; hoverP.redraw(); } } hoverP = p; if (p){ p.hover = true; if (performance.now() - (setHover.lt||0) > 350){ setHover.lt = performance.now(); SFX.hover(); } } }
-  if (p && p.rows && uv){ const r = rowAt(p, uv); if (r !== p.hoverRow){ p.hoverRow = r; p.redraw(); } }
+  if (p && p.rows && uv){ const tg = p.targetAt ? p.targetAt(uv) : null; const r = tg && tg.row != null ? tg.row : -1; if (r !== p.hoverRow){ p.hoverRow = r; p.redraw(); } }
 }
 async function toggleHands(){
   if (handsOn){ handsOn = false; hctx.clearRect(0,0,innerWidth,innerHeight); setHover(null); $('bHand').classList.remove('on'); $('bHand').textContent = '✋ EL'; return; }
@@ -464,9 +473,16 @@ async function toggleHands(){
 }
 $('bHand').onclick = toggleHands;
 
-let scaleOp = null, lastActivate = 0;
+let scaleOp = null;
+const TIP = [8,12,16,20], PIP = [6,10,14,18];
+function handPose(lm, va){
+  const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
+  const size = d(lm[0], lm[9]) || 0.1;
+  let ext = 0; for (let k=0;k<4;k++) if (d(lm[TIP[k]], lm[0]) > d(lm[PIP[k]], lm[0]) * 1.12) ext++;
+  return { size, ext };
+}
 function handTick(t){
-  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT || t - lastDet < 55) return; lastVT = v.currentTime; lastDet = t;
+  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT || t - lastDet < 75) return; lastVT = v.currentTime; lastDet = t;
   let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
   hctx.clearRect(0, 0, innerWidth, innerHeight);
   const W = innerWidth, H = innerHeight, va = v.videoWidth / v.videoHeight;
@@ -474,74 +490,88 @@ function handTick(t){
   const mirror = MODE === 'desk';
   const map = q => [ ox + (mirror ? 1-q.x : q.x)*v.videoWidth*sc, oy + q.y*v.videoHeight*sc ];
   const found = ((r && r.landmarks) || []).map(lm => {
-    const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
-    const size = d(lm[0], lm[9]) || 0.1; const P = lm.map(map);
-    // pinch ratio uses 3D distance when available (more robust to rotation)
-    const pz = Math.hypot((lm[4].x-lm[8].x)*va, lm[4].y-lm[8].y, ((lm[4].z||0)-(lm[8].z||0))*0.8);
-    return { P, size, pinchR: pz / size, x: (P[4][0]+P[8][0])/2, y: (P[4][1]+P[8][1])/2 };
-  });
+    const P = lm.map(map), pose = handPose(lm, va);
+    const cx = (P[0][0]+P[5][0]+P[9][0]+P[17][0])/4, cy = (P[0][1]+P[5][1]+P[9][1]+P[17][1])/4;   // palm centre: stable at distance
+    return { P, x:cx, y:cy, ext:pose.ext, size:pose.size };
+  }).filter(f => f.size > 0.05);
   const used = new Set();
   slots.forEach(s => { let best = -1, bd = 1e9; found.forEach((f,i)=>{ if (used.has(i)) return; const dd = Math.hypot(f.x-s.x, f.y-s.y); if (dd < bd){ bd = dd; best = i; } });
-    if (best >= 0 && bd < 280){ used.add(best); s.f = found[best]; s.seen = t; } else s.f = null; });
-  found.forEach((f,i)=>{ if (!used.has(i) && f.size > 0.07) slots.push({ x:f.x, y:f.y, f, seen:t, pinch:false, pf:0, vx:0, vy:0 }); });
-  for (let i = slots.length-1; i >= 0; i--){ const s = slots[i]; if (!s.f && t - s.seen > 350){ if (s.grab) SFX.drop(); slots.splice(i,1); } }
+    if (best >= 0 && bd < 300){ used.add(best); s.f = found[best]; s.seen = t; } else s.f = null; });
+  found.forEach((f,i)=>{ if (!used.has(i)) slots.push({ x:f.x, y:f.y, f, seen:t, fistN:0, openN:0, fist:false, dwellKey:null, dwellT:0, fired:null }); });
+  for (let i = slots.length-1; i >= 0; i--){ const s = slots[i]; if (!s.f && t - s.seen > 400){ if (s.grab) SFX.drop(); slots.splice(i,1); } }
 
-  let anyHover = null, anyUV = null;
+  let hot = null, hotUV = null;
   slots.forEach(s => {
     if (!s.f) return; const f = s.f;
-    const nx = s.x*0.5 + f.x*0.5, ny = s.y*0.5 + f.y*0.5;
-    const spd = Math.hypot(nx - s.x, ny - s.y) / Math.max(0.016, (t - (s.lt || t - 55))/1000); s.lt = t;
-    s.x = nx; s.y = ny;
-    const was = s.pinch;
-    if (!was){ s.pf = f.pinchR < 0.26 ? s.pf + 1 : 0; s.pinch = s.pf >= 2 && spd < 1100; }   // deliberate, steady pinch
-    else s.pinch = f.pinchR < 0.45;
-    if (s.pinch && !was) s.start = { t, x:s.x, y:s.y, pk: pick(s.x, s.y) };
-    if (s.pinch && s.start){
-      const moved = Math.hypot(s.x - s.start.x, s.y - s.start.y);
-      if (!s.grab && s.start.pk && (moved > 34 || t - s.start.t > 480)){
-        const p = s.start.pk.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
-        if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; SFX.grab(); }
-      }
-      if (s.grab && !scaleOp){
-        const p = s.grab.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
-        if (hp){ p.mesh.position.x = hp.x + s.grab.ox; p.mesh.position.y = hp.y + s.grab.oy; p.baseY = p.mesh.position.y; }
-      }
+    // adaptive smoothing: calm when still, responsive when moving
+    const dist = Math.hypot(f.x - s.x, f.y - s.y), a = Math.min(0.85, 0.22 + dist/220);
+    s.x += (f.x - s.x)*a; s.y += (f.y - s.y)*a;
+    // fist / open with hysteresis
+    if (f.ext <= 1){ s.fistN++; s.openN = 0; } else if (f.ext >= 3){ s.openN++; s.fistN = 0; }
+    const wasFist = s.fist;
+    if (!s.fist && s.fistN >= 2) s.fist = true;
+    if (s.fist && s.openN >= 2) s.fist = false;
+
+    if (s.fist && !wasFist){                 // grab start
+      const pk = pick(s.x, s.y);
+      if (pk){ const p = pk.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
+        if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; SFX.grab(); } }
+      s.dwellKey = null;
     }
-    if (!s.pinch && was){
-      if (!s.grab && s.start && s.start.pk && t - s.start.t > 90 && t - s.start.t < 700 && Math.hypot(s.x - s.start.x, s.y - s.start.y) < 30 && t - lastActivate > 700){ lastActivate = t; activate(s.start.pk.p, s.start.pk.uv); }
-      else if (s.grab) SFX.drop();
-      s.grab = null; s.start = null;
-    }
-    const state = s.grab ? 'grab' : s.pinch ? 'pinch' : 'idle';
-    drawHand(f.P, state); drawCursor(s.x, s.y, state);
-    if (s.grab) anyHover = s.grab.p; else if (!anyHover){ const pk = pick(s.x, s.y); if (pk){ anyHover = pk.p; anyUV = pk.uv; } }
+    if (!s.fist && wasFist){ if (s.grab) SFX.drop(); s.grab = null; }
+    if (s.grab && !scaleOp){ const p = s.grab.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
+      if (hp){ p.mesh.position.x = hp.x + s.grab.ox; p.mesh.position.y = hp.y + s.grab.oy; p.baseY = p.mesh.position.y; } }
+
+    // dwell-to-select (open hand only)
+    let prog = 0;
+    if (!s.fist){
+      const pk = pick(s.x, s.y);
+      if (pk && !hot){ hot = pk.p; hotUV = pk.uv; }
+      const tg = pk && pk.p.targetAt ? pk.p.targetAt(pk.uv) : null;
+      const key = tg ? pk.p.id + ':' + tg.id : null;
+      if (key !== s.dwellKey){ s.dwellKey = key; s.dwellT = t; if (key !== s.fired) s.fired = null; }
+      if (key && key !== s.fired){
+        prog = Math.min(1, (t - s.dwellT) / tg.ms);
+        if (prog >= 1){ s.fired = key; s.dwellKey = null; activate(pk.p, pk.uv, tg); }
+      }
+      if (!key) s.fired = null;
+    } else if (s.grab) hot = s.grab.p;
+
+    drawHand(f.P, s.grab ? 'grab' : s.fist ? 'pinch' : 'idle');
+    drawCursor(s.x, s.y, s.grab ? 'grab' : 'idle', prog);
   });
 
-  const pin = slots.filter(s => s.f && s.pinch);
-  if (pin.length === 2){
-    const cand = s => (s.grab && s.grab.p) || (s.start && s.start.pk && s.start.pk.p) || null;
-    const target = (scaleOp && scaleOp.p) || cand(pin[0]) || cand(pin[1]);
-    const dist = Math.hypot(pin[0].x - pin[1].x, pin[0].y - pin[1].y);
+  // two fists → scale (the panel held by either fist)
+  const fists = slots.filter(s => s.f && s.fist);
+  if (fists.length === 2){
+    const target = (scaleOp && scaleOp.p) || (fists[0].grab && fists[0].grab.p) || (fists[1].grab && fists[1].grab.p);
+    const dd = Math.hypot(fists[0].x - fists[1].x, fists[0].y - fists[1].y);
     if (target){
-      if (!scaleOp){ scaleOp = { p: target, d0: Math.max(40, dist), u0: target.user, tick: 0 }; target.moved = true; SFX.scale(); }
-      target.user = Math.max(0.3, Math.min(4, scaleOp.u0 * dist / scaleOp.d0));
-      const hp = screenToPlane((pin[0].x + pin[1].x)/2, (pin[0].y + pin[1].y)/2, target.mesh.position.z);
-      if (hp){ target.mesh.position.x = hp.x; target.mesh.position.y = hp.y; target.baseY = hp.y; }
-      if (t - scaleOp.tick > 140){ scaleOp.tick = t; tone(400 + target.user*180, 400 + target.user*180, 0.03, 'sine', 0.015); }
+      if (!scaleOp){ scaleOp = { p: target, d0: Math.max(60, dd), u0: target.user, tick: 0 }; target.moved = true; SFX.scale(); }
+      target.user = Math.max(0.3, Math.min(4, scaleOp.u0 * dd / scaleOp.d0));
+      if (t - scaleOp.tick > 160){ scaleOp.tick = t; tone(400 + target.user*160, 400 + target.user*160, 0.03, 'sine', 0.015); }
       hctx.save(); hctx.strokeStyle = AMBER; hctx.shadowColor = AMBER; hctx.shadowBlur = 12; hctx.setLineDash([8,8]); hctx.lineWidth = 2;
-      hctx.beginPath(); hctx.moveTo(pin[0].x, pin[0].y); hctx.lineTo(pin[1].x, pin[1].y); hctx.stroke(); hctx.restore();
-      pin.forEach(s => { s.start = null; s.grab = null; });
-      anyHover = target;
+      hctx.beginPath(); hctx.moveTo(fists[0].x, fists[0].y); hctx.lineTo(fists[1].x, fists[1].y); hctx.stroke(); hctx.restore();
+      hot = target;
     }
   } else if (scaleOp){ scaleOp = null; SFX.drop(); }
-  setHover(anyHover, anyUV);
+
+  // hover highlight (row-aware)
+  setHover(hot, hotUV);
+  const dh = hot === pDialog && hotUV && pDialog.targetAt(hotUV); if (!!dh !== pDialogHot){ pDialogHot = !!dh; pDialog.redraw(); }
 }
-function activate(p, uv){ p.pop = 1; SFX.tap(); if (p.onTap) p.onTap.call(p, uv || { x:.5, y:.5 }); else if (p === pDialog) startListen('once'); }
+function activate(p, uv, tg){
+  p.pop = 1; SFX.tap();
+  tg = tg || (p.targetAt ? p.targetAt(uv || { x:.5, y:.5 }) : null);
+  if (tg && p.onTarget) p.onTarget.call(p, tg.id);
+  else if (p === pDialog) startListen('once');
+}
 $('gl').addEventListener('pointerup', e => { const pk = pick(e.clientX, e.clientY); if (pk) activate(pk.p, pk.uv); });
 
 // ============ LOOP ============
 let last = performance.now();
 function loop(t){
+  if (document.hidden){ requestAnimationFrame(loop); return; }
   const dt = Math.min(.05, (t-last)/1000); last = t;
   if (handsOn) handTick(t);
   panels.forEach(p => {
@@ -570,35 +600,45 @@ function speak(text){
 // ============ VOICE IN ============
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, paused = false, onceMode = null;
-const WAKE = /(jarvis|carvis|cervis|jarvi̇s|ceyvis|çarvis)/i;
+const WAKE = /(jarvis|carvis|cervis|ceyvis|çarvis|jarvıs|carvıs|şarvis|harvis|jar vis)/i;
 function startListen(kind){
   if (!SR){ S.you=''; S.answer = 'Bu tarayıcıda ses tanıma yok efendim. Alttaki kutuya yazabilirsiniz.'; pDialog.redraw(); return; }
   onceMode = kind || 'once'; S.mode = 'listening'; S.you = kind === 'note' ? 'Not: …' : '…'; SFX.listen(); pDialog.redraw();
   if (!listenOn) beginRec(); else if (paused) resumeRec();
 }
+let latest = '', handled = false, silT = 0, restartT = 0;
 function beginRec(){
   if (!SR) return;
-  try { if (rec) rec.abort(); } catch(e){}
-  rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = true;
+  try { if (rec){ rec.onend = null; rec.abort(); } } catch(e){}
+  rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  rec.onstart = () => { latest = ''; handled = false; };
   rec.onresult = e => {
-    for (let i = e.resultIndex; i < e.results.length; i++){
-      const txt = e.results[i][0].transcript.trim();
-      if (onceMode || WAKE.test(txt)){ S.you = (onceMode === 'note' ? 'Not: ' : '') + txt; pDialog.redraw(); }
-      if (e.results[i].isFinal) handleUtterance(txt);
-    }
+    let txt = ''; for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    latest = txt.trim(); if (!latest) return;
+    if (onceMode || WAKE.test(latest)){ S.you = (onceMode === 'note' ? 'Not: ' : '') + latest; pDialog.redraw(); }
+    clearTimeout(silT);
+    if (e.results[e.results.length-1].isFinal){ if (!handled){ handled = true; handleUtterance(latest); } }
+    else silT = setTimeout(() => { try { rec.stop(); } catch(_){} }, 1200);     // iOS sometimes never sends "final"
   };
-  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){ listenOn = false; updateMic(); S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin.'; pDialog.redraw(); } };
-  rec.onend = () => { if (listenOn && !paused){ try { rec.start(); } catch(e){ listenOn = false; updateMic(); S.you=''; S.answer = 'Dinleme durdu efendim. Tekrar başlatmak için DİNLE\'ye dokunun.'; pDialog.redraw(); } } };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){ listenOn = false; updateMic(); S.you=''; S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin.'; pDialog.redraw(); }
+  };
+  rec.onend = () => {
+    clearTimeout(silT);
+    if (!handled && latest){ handled = true; handleUtterance(latest); }
+    if (onceMode && !latest && S.mode === 'listening'){ /* keep waiting */ }
+    if (listenOn && !paused){ clearTimeout(restartT); restartT = setTimeout(() => { try { rec.start(); } catch(e){ listenOn = false; updateMic(); S.you=''; S.answer = 'Dinleme durdu efendim. DİNLE\'ye dokunun.'; pDialog.redraw(); } }, 180); }
+  };
   try { rec.start(); listenOn = true; paused = false; } catch(e){ listenOn = false; }
   updateMic();
 }
 function pauseRec(){ if (listenOn && rec && !paused){ paused = true; try { rec.stop(); } catch(e){} } }
-function resumeRec(){ if (listenOn && rec && paused){ paused = false; try { rec.start(); } catch(e){} } }
+function resumeRec(){ if (listenOn && rec && paused){ paused = false; clearTimeout(restartT); restartT = setTimeout(() => { try { rec.start(); } catch(e){} }, 250); } }
 function stopRec(){ listenOn = false; paused = false; onceMode = null; try { rec && rec.stop(); } catch(e){} if (S.mode === 'listening') S.mode = 'idle'; updateMic(); }
 function updateMic(){ $('mic').classList.toggle('on', listenOn); $('mic').textContent = listenOn ? 'DUR' : 'DİNLE'; pDialog.redraw(); }
 $('mic').onclick = () => { if (listenOn) stopRec(); else { beginRec(); S.you=''; S.answer = 'Dinliyorum efendim. “Jarvis” diye başlayın.'; SFX.listen(); pDialog.redraw(); } };
 function handleUtterance(raw){
-  let txt = raw.trim(); const m = txt.match(/^(.*?)(jarvis|carvis|cervis|ceyvis|çarvis)[,.!\s]*(.*)$/i);
+  let txt = raw.trim(); const m = txt.match(/^(.*?)(jarvis|carvis|cervis|ceyvis|çarvis|jarvıs|carvıs|şarvis|harvis|jar vis)[,.!\s]*(.*)$/i);
   if (onceMode === 'note'){ onceMode = null; S.mode = 'idle'; const t = m ? (m[3] || '') : txt; if (t) addNote(t); return; }
   if (onceMode){ onceMode = null; S.mode = 'idle'; if (m) txt = m[3] || ''; if (txt) command(txt); return; }
   if (!m) return; const rest = (m[3] || '').trim();
@@ -701,6 +741,7 @@ async function go(mode){
   setTimeout(() => { S.answer = `Tüm sistemler çevrimiçi. Hoş geldin ${USER}. Bugün ne inşa ediyoruz, efendim?`; speak(S.answer); }, 1900);
   toggleHands();
 }
+if (location.hash === '#debug') window.__hj = { S, panels, camera, hud, pDialog, pNotes, pProj, slots, command, get scaleOp(){ return scaleOp; }, get handsOn(){ return handsOn; } };
 $('goDesk').onclick = () => go('desk');
 $('goRoom').onclick = () => go('room');
 })();
