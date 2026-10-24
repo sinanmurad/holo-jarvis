@@ -36,6 +36,7 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 .cur::after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--holo)}
 .cur.pinch{transform:scale(.6);border-color:var(--amber);box-shadow:0 0 22px var(--amber)}
 .cur.hover{border-color:#fff}
+.cur.grab{transform:scale(.75);border-color:var(--amber);box-shadow:0 0 28px var(--amber)}
 body.vr video{visibility:hidden}
 body.vr .btn,body.vr #bar{display:none!important}
 [hidden]{display:none!important}
@@ -90,9 +91,15 @@ window.HJHands = {
   async load(){
     if (hl) return hl;
     const fs = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-    const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:1, minHandDetectionConfidence:0.5, minTrackingConfidence:0.5 });
-    try { hl = await HandLandmarker.createFromOptions(fs, opts("GPU")); } catch(e){ hl = await HandLandmarker.createFromOptions(fs, opts("CPU")); }
-    return hl;
+    const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:1, minHandDetectionConfidence:0.4, minHandPresenceConfidence:0.4, minTrackingConfidence:0.4 });
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('zaman aşımı')), ms))]);
+    const order = ios ? ["CPU", "GPU"] : ["GPU", "CPU"];
+    let lastErr;
+    for (const d of order){
+      try { hl = await withTimeout(HandLandmarker.createFromOptions(fs, opts(d)), 45000); return hl; } catch(e){ lastErr = e; }
+    }
+    throw lastErr;
   },
   detect(video, t){ return hl ? hl.detectForVideo(video, t) : null; }
 };
@@ -148,7 +155,7 @@ function makePanel(w, h, worldW, draw){
   const p = { c, ctx:c.getContext('2d'), tex, mesh, w, h, draw, redraw(){ p.ctx.clearRect(0,0,w,h); draw(p.ctx,w,h); tex.needsUpdate = true; } };
   mesh.userData.panel = p; p.redraw(); hud.add(mesh); return p;
 }
-function place(p, angDeg, y, r=2.1){ const a = angDeg*Math.PI/180; p.mesh.position.set(Math.sin(a)*r, y, -Math.cos(a)*r); p.mesh.lookAt(0, y, 0); p.baseY = y; p.phase = Math.random()*6; }
+function place(p, angDeg, y, r=3.2){ const a = angDeg*Math.PI/180; p.mesh.position.set(Math.sin(a)*r, y, -Math.cos(a)*r); p.mesh.lookAt(0, y, 0); p.baseY = y; p.phase = Math.random()*6; }
 
 const pad = n => String(n).padStart(2,'0');
 const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -164,7 +171,7 @@ const pTitle = makePanel(1024, 420, 1.15, (ctx,w,h)=>{
   ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}   ·   ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`, w/2, 350);
   ctx.restore();
 });
-place(pTitle, 0, 0.78, 2.3);
+place(pTitle, 0, 1.15, 3.5);
 
 const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
   frame(ctx,w,h, S.mode==='listening' ? AMBER : HOLO);
@@ -186,7 +193,7 @@ const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
   ctx.fillText(S.mode==='listening' ? 'Sizi dinliyorum…' : 'Panele dokun ya da KONUŞ\'a bas ▌', 74, h-88);
   ctx.restore();
 });
-place(pDialog, 0, 0.0, 2.0);
+place(pDialog, 0, 0.05, 3.0);
 
 const stats = { power:100, core:32, net:92, mem:64 };
 const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
@@ -200,7 +207,7 @@ const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
     const segs = Math.round(36*v); for(let s=0;s<segs;s++) ctx.fillRect(44+s*20,y+46,14,14);
   }); ctx.restore();
 });
-place(pStatus, -38, 0.05, 2.1);
+place(pStatus, -30, 0.1, 3.2);
 
 let sweep = 0; const blips = Array.from({length:7},()=>({a:Math.random()*6.28,r:30+Math.random()*190}));
 const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
@@ -214,7 +221,7 @@ const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
   blips.forEach(b=>{ const d = ((sweep - b.a) % 6.283 + 6.283) % 6.283; const al = Math.max(0.15, 1 - d/4); ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(cx+b.r*Math.cos(b.a), cy+b.r*Math.sin(b.a), 7, 0, 6.283); ctx.fill(); });
   ctx.restore();
 });
-place(pRadar, 38, 0.05, 2.1);
+place(pRadar, 30, 0.1, 3.2);
 
 let wt = 0;
 const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
@@ -227,7 +234,7 @@ const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
   for (let x=40; x<w-40; x+=24){ const hh = live ? 8+Math.abs(Math.sin(x*0.3+wt*10))*40 : 6; ctx.fillRect(x, h-40-hh, 14, hh); }
   ctx.restore();
 });
-place(pVoice, -68, -0.45, 2.1);
+place(pVoice, -56, -0.7, 3.2);
 
 const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
   frame(ctx,w,h); header(ctx,'KONUM',w);
@@ -238,7 +245,7 @@ const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
   glow(ctx, HOLO, 14); ctx.fillStyle=HOLO; ctx.textAlign='center'; ctx.font='800 46px -apple-system,system-ui,sans-serif'; ctx.fillText('İSTANBUL', w/2, 560);
   ctx.font='600 24px ui-monospace,Menlo,monospace'; ctx.fillText('41.01° K   28.97° D', w/2, 604); ctx.restore();
 });
-place(pLoc, 68, -0.45, 2.1);
+place(pLoc, 56, -0.7, 3.2);
 
 const panels = [pTitle, pDialog, pStatus, pRadar, pVoice, pLoc];
 setInterval(()=>{ pTitle.redraw(); stats.mem = 58 + Math.round(Math.random()*12); stats.core = 30 + Math.round(Math.random()*5); pStatus.redraw(); }, 1000);
@@ -293,7 +300,7 @@ function loop(t){
   sweep += dt*1.6; wt += dt;
   S.level = S.mode==='speaking' ? 0.5+0.5*Math.sin(t*0.02) : (S.mode==='listening' ? 0.4+0.4*Math.sin(t*0.013) : 0);
   pRadar.redraw(); pVoice.redraw();
-  panels.forEach(p => { p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + p.phase)*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = 1 + 0.08*p.pop + (p.hover ? 0.05 : 0); p.mesh.scale.set(s,s,s); });
+  panels.forEach(p => { if (p !== (grab && grab.p)) p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + (p.phase||0))*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = (p.userScale||1) * (1 + 0.08*p.pop + (p.hover ? 0.05 : 0)); p.mesh.scale.set(s,s,s); });
   if (handsOn) handTick(t);
   updateCamera(); renderFrame(); requestAnimationFrame(loop);
 }
@@ -339,37 +346,124 @@ const cur1 = $('cur1'), cur2 = $('cur2');
 async function toggleHands(){
   if (handsOn){ handsOn = false; cur1.hidden = cur2.hidden = true; setHover(null); $('hand').classList.remove('on'); $('hand').textContent = '✋ EL'; return; }
   if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
-  $('hand').textContent = '✋ YÜKLENİYOR…';
+  $('hand').textContent = '✋ YÜKLENİYOR…'; S.you=''; S.answer = 'El takibi modeli indiriliyor efendim (yaklaşık 8 MB). Bu ilk seferde biraz sürebilir.'; pDialog.redraw();
   try {
     await window.HJHands.load(); handsOn = true; $('hand').classList.add('on'); $('hand').textContent = '✋ EL: AÇIK';
     if (!vr){ S.you=''; S.answer = 'El kontrolü aktif efendim. Elinizi kameranın önüne uzatın, panelin üstüne getirin ve başparmakla işaret parmağınızı birleştirin.'; speak(S.answer); }
-  } catch(e){ $('hand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim. İnternet bağlantısını kontrol edin.'; pDialog.redraw(); }
+  } catch(e){ $('hand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim. Hata: ' + (e && e.message ? e.message : e) + '. Wi-Fi ile tekrar deneyin.'; pDialog.redraw(); }
 }
 $('hand').onclick = toggleHands;
 function setHover(p){ if (hoverP === p) return; if (hoverP) hoverP.hover = false; hoverP = p; if (p) p.hover = true; }
+let grab = null, pinchStart = null;
+const hudInv = new THREE.Quaternion(), tmpDir = new THREE.Vector3();
+function rayDirLocal(nx, ny, cam){
+  v2.set(nx, ny); ray.setFromCamera(v2, cam);
+  hudInv.copy(hud.quaternion).invert();
+  return tmpDir.copy(ray.ray.direction).applyQuaternion(hudInv).normalize();
+}
 function handTick(t){
   const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT) return;
   lastVT = v.currentTime;
   let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
   const lm = r && r.landmarks && r.landmarks[0];
-  if (!lm){ if (t - lostAt > 250){ cur1.hidden = cur2.hidden = true; setHover(null); pinchDown = false; sm = null; } return; }
+  if (!lm){ if (t - lostAt > 300){ cur1.hidden = cur2.hidden = true; setHover(null); pinchDown = false; grab = null; pinchStart = null; sm = null; } return; }
   lostAt = t;
   const va = v.videoWidth / v.videoHeight;
   const d = (a, b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
-  const pinch = d(lm[4], lm[8]) / (d(lm[0], lm[9]) || 0.1);
+  const handSize = d(lm[0], lm[9]) || 0.1;
+  const pinch = d(lm[4], lm[8]) / handSize;
   const raw = { x:(lm[4].x + lm[8].x)/2, y:(lm[4].y + lm[8].y)/2 };
-  sm = sm ? { x: sm.x*0.55 + raw.x*0.45, y: sm.y*0.55 + raw.y*0.45 } : raw;
-  // video coords → view coords (object-fit: cover)
+  sm = sm ? { x: sm.x*0.5 + raw.x*0.5, y: sm.y*0.5 + raw.y*0.5 } : raw;
   const W = innerWidth, H = innerHeight, vw = vr ? W/2 : W;
   const sc = Math.max(vw / v.videoWidth, H / v.videoHeight);
   const ex = (vw - v.videoWidth*sc)/2 + sm.x*v.videoWidth*sc, ey = (H - v.videoHeight*sc)/2 + sm.y*v.videoHeight*sc;
   cur1.hidden = false; cur1.style.left = ex + 'px'; cur1.style.top = ey + 'px';
   if (vr){ cur2.hidden = false; cur2.style.left = (ex + W/2) + 'px'; cur2.style.top = ey + 'px'; } else cur2.hidden = true;
-  const p = hitPanel(ex/vw*2-1, -(ey/H)*2+1, vr ? eyes[0] : camera);
-  setHover(p);
-  [cur1, cur2].forEach(c => { c.classList.toggle('pinch', pinch < 0.35); c.classList.toggle('hover', !!p); });
-  if (pinch < 0.32 && !pinchDown){ pinchDown = true; if (p) activatePanel(p); }
-  else if (pinch > 0.48) pinchDown = false;
+  const nx = ex/vw*2-1, ny = -(ey/H)*2+1, cam = vr ? eyes[0] : camera;
+  const isPinch = pinchDown ? pinch < 0.5 : pinch < 0.33;
+
+  if (isPinch && !pinchDown){
+    pinchDown = true;
+    pinchStart = { t, x:ex, y:ey, p: hitPanel(nx, ny, cam), size: handSize };
+  }
+  if (pinchDown && isPinch){
+    const moved = Math.hypot(ex - pinchStart.x, ey - pinchStart.y);
+    if (!grab && pinchStart.p && (t - pinchStart.t > 350 || moved > 30)){
+      const p = pinchStart.p;
+      grab = { p, dist: p.mesh.position.length(), scale0: p.userScale || 1, size0: handSize };
+    }
+    if (grab){
+      const dir = rayDirLocal(nx, ny, cam);
+      const pos = dir.multiplyScalar(grab.dist);
+      grab.p.mesh.position.copy(pos); grab.p.baseY = pos.y;
+      grab.p.mesh.lookAt(0, pos.y, 0);
+      // pull hand toward camera → bigger, push away → smaller
+      grab.p.userScale = Math.max(0.35, Math.min(3, grab.scale0 * Math.pow(handSize / grab.size0, 1.6)));
+    }
+  }
+  if (pinchDown && !isPinch){
+    if (!grab && pinchStart && pinchStart.p && t - pinchStart.t < 500) activatePanel(pinchStart.p);
+    pinchDown = false; grab = null; pinchStart = null;
+  }
+  const hov = grab ? grab.p : hitPanel(nx, ny, cam);
+  setHover(hov);
+  [cur1, cur2].forEach(c => { c.classList.toggle('pinch', isPinch); c.classList.toggle('hover', !!hov); c.classList.toggle('grab', !!grab); });
+}
+
+// ---------------- research panels (Wikipedia) ----------------
+let pInfo = null, pImg = null, info = null, infoImg = null;
+function spawnInFront(p, offsetDeg, y, r){
+  const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).applyQuaternion(hudInv.copy(hud.quaternion).invert());
+  const az = Math.atan2(f.x, -f.z)*180/Math.PI + offsetDeg;
+  place(p, az, y, r); p.pop = 1;
+}
+function ensureResearchPanels(){
+  if (pInfo) return;
+  pInfo = makePanel(900, 760, 1.05, (ctx,w,h)=>{
+    frame(ctx,w,h); header(ctx,'ARAŞTIRMA',w, info ? 'VİKİPEDİ' : '…');
+    if (!info) return;
+    ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline='top'; ctx.fillStyle = HOLO;
+    ctx.font = '800 44px -apple-system,system-ui,sans-serif';
+    const tl = wrap(ctx, info.title, w-80).slice(0,2); tl.forEach((l,i)=>ctx.fillText(l, 40, 106+i*52));
+    let y = 106 + tl.length*52 + 18;
+    ctx.fillStyle = 'rgba(214,236,240,.92)'; ctx.font = '400 28px -apple-system,system-ui,sans-serif';
+    const lines = wrap(ctx, info.text, w-80); const maxL = Math.floor((h-60-y)/38);
+    if (lines.length > maxL){ lines.length = maxL; lines[maxL-1] = lines[maxL-1].replace(/\s*\S*$/,'') + ' …'; }
+    lines.forEach((l,i)=>ctx.fillText(l, 40, y+i*38));
+    ctx.restore();
+  });
+  pImg = makePanel(800, 800, 0.95, (ctx,w,h)=>{
+    frame(ctx,w,h); header(ctx,'GÖRSEL',w, 'TUT · TAŞI · ÇEK');
+    if (!infoImg){ ctx.save(); ctx.fillStyle='rgba(214,236,240,.7)'; ctx.font='500 28px -apple-system,system-ui,sans-serif'; ctx.textAlign='center'; ctx.fillText(info ? 'Görsel bulunamadı' : 'Yükleniyor…', w/2, h/2); ctx.restore(); return; }
+    const bx = 30, by = 100, bw = w-60, bh = h-130; const k = Math.min(bw/infoImg.width, bh/infoImg.height);
+    const iw = infoImg.width*k, ih = infoImg.height*k;
+    ctx.globalAlpha = 0.95; ctx.drawImage(infoImg, bx+(bw-iw)/2, by+(bh-ih)/2, iw, ih); ctx.globalAlpha = 1;
+  });
+  pImg.mesh.material.blending = THREE.NormalBlending; pImg.mesh.material.opacity = 0.96;
+  panels.push(pInfo, pImg);
+}
+async function wikiFind(q, lang){
+  const j = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch=${encodeURIComponent(q)}`)).json();
+  const title = j.query && j.query.search && j.query.search[0] && j.query.search[0].title; if (!title) return null;
+  const s = await (await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g,'_'))}`)).json();
+  let img = s.thumbnail && s.thumbnail.source; if (img) img = img.replace(/\/\d+px-/, '/800px-'); else if (s.originalimage) img = s.originalimage.source;
+  return { title: s.title || title, text: s.extract || '', img };
+}
+async function research(q){
+  ensureResearchPanels(); info = null; infoImg = null;
+  spawnInFront(pInfo, -17, 0.0, 2.6); spawnInFront(pImg, 17, 0.0, 2.6);
+  pInfo.redraw(); pImg.redraw();
+  try {
+    info = await wikiFind(q, 'tr') || await wikiFind(q, 'en');
+    if (!info) info = { title: q, text: 'Bu konuda kaynak bulamadım efendim.' };
+    pInfo.redraw(); pImg.redraw();
+    if (info.img){
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = () => { infoImg = im; pImg.redraw(); pImg.pop = 1; };
+      im.onerror = () => { pImg.redraw(); };
+      im.src = info.img;
+    }
+  } catch(e){ info = { title: q, text: 'Araştırma sırasında bağlantı hatası oldu efendim.' }; pInfo.redraw(); pImg.redraw(); }
 }
 
 // ---------------- voice out ----------------
@@ -402,7 +496,7 @@ $('mic').onclick = toggleListen;
 $('txt').addEventListener('keydown', e => { if (e.key === 'Enter'){ const q = e.target.value.trim(); e.target.value=''; e.target.blur(); if (q) ask(q); } });
 
 // ---------------- brain (Groq) ----------------
-const SYS = 'Sen J.A.R.V.I.S.\'sin: kullanıcının kişisel yapay zekâ asistanı. Odada holografik paneller olarak görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma, bilmediğini söyle.';
+const SYS = 'Sen J.A.R.V.I.S.\'sin: kullanıcının kişisel yapay zekâ asistanı. Odada holografik paneller olarak görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma, bilmediğini söyle. Kullanıcı bir şeyi aramanı, araştırmanı, göstermeni isterse ya da bir kişi, yer, hayvan, nesne veya kavram hakkında bilgi isterse, kısa cevabından sonra en sona ayrı bir satırda tam olarak [ARA: arama terimi] yaz. Arama terimi kısa ve Vikipedi başlığına uygun olsun. Ekranda araştırma ve görsel paneli açılacağını bil.';
 const MODELS = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
 const clean = t => String(t || '').replace(/[*#_`]/g,'').trim();
 function msgs(q){ return [...history.slice(-8), { role:'user', content:q }]; }
@@ -468,7 +562,10 @@ async function ask(q){
     a = { nologin:'Beynimi bağlamak için AYAR\'dan ücretsiz Claude\'a bağlanın efendim.', noputer:'Bağlantı servisine ulaşamadım efendim.', puterfail:'Claude şu an cevap vermedi efendim, tekrar deneyin.', nokey:'Beynimi bağlamak için AYAR\'dan bağlanın efendim.', badkey:'API anahtarı geçersiz görünüyor efendim. AYAR\'dan kontrol edin.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Groq modellerine ulaşamadım efendim.' }[e.code] || 'Bir sorun oluştu efendim.';
     if (['nokey','badkey','nologin'].includes(e.code)) setTimeout(()=>{ $('settings').hidden = false; }, 1500);
   }
+  let q2 = null; const m = a.match(/\[ARA:\s*([^\]]+)\]/i);
+  if (m){ q2 = m[1].trim(); a = a.replace(m[0], '').trim() || 'Araştırıyorum efendim.'; }
   S.answer = a; speak(a);
+  if (q2) research(q2);
 }
 
 // ---------------- settings ----------------
