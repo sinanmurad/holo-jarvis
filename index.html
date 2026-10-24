@@ -11,37 +11,31 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:-apple-system,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 video,#gl,#hands,#fx{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
-video{filter:brightness(.5) contrast(1.15) saturate(.7) hue-rotate(-8deg)}
-#fx{pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,rgba(0,40,50,0) 40%,rgba(0,10,14,.75) 100%),repeating-linear-gradient(0deg,rgba(95,242,255,.035) 0 1px,transparent 1px 4px);mix-blend-mode:normal}
-#gl{z-index:2}#hands{z-index:3;pointer-events:none}
-#gl{touch-action:none}
-.btn{position:fixed;z-index:5;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;padding:10px 14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#recenter{top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
-#gear{top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
-#bar{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:12px max(14px,env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
-#mic{width:74px;height:74px;border-radius:50%;border:2px solid var(--holo);background:var(--glass);color:var(--holo);font:700 12px ui-monospace,Menlo,monospace;letter-spacing:.1em;flex:none}
+video{filter:brightness(.55) contrast(1.15) saturate(.7) hue-rotate(-8deg)}
+video.mirror{transform:scaleX(-1)}
+#fx{pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,rgba(0,40,50,0) 45%,rgba(0,10,14,.7) 100%),repeating-linear-gradient(0deg,rgba(95,242,255,.03) 0 1px,transparent 1px 4px)}
+#gl{z-index:2;touch-action:none}#hands{z-index:3;pointer-events:none}
+.btn{position:fixed;z-index:5;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;padding:9px 12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.btn.on{border-color:var(--amber);color:var(--amber)}
+#bMode{top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
+#bHand{top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
+#bGear{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+#bReset{top:calc(50px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+#bar{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;justify-content:center;padding:10px max(12px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+#mic{width:64px;height:64px;border-radius:50%;border:2px solid var(--holo);background:var(--glass);color:var(--holo);font:700 11px ui-monospace,Menlo,monospace;letter-spacing:.06em;flex:none}
 #mic.on{border-color:var(--amber);color:var(--amber);box-shadow:0 0 24px rgba(255,181,71,.6)}
-#txt{flex:1;max-width:420px;min-width:0;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--ink);border-radius:999px;padding:12px 16px;font:15px -apple-system,system-ui,sans-serif;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#txt{flex:1;max-width:420px;min-width:0;background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--ink);border-radius:999px;padding:11px 15px;font:15px -apple-system,system-ui,sans-serif;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #txt::placeholder{color:rgba(214,236,240,.55)}
-.sheet{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:420px;background:#061418;border:1px solid rgba(95,242,255,.5);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
-.card h1{margin:0;font:700 30px ui-monospace,Menlo,monospace;letter-spacing:.18em;color:var(--holo);text-align:center}
-.card p{margin:0;font-size:15px;line-height:1.5;color:#a9c4ca}
+.sheet{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:22px;overflow:auto}
+.card{width:100%;max-width:430px;background:#061418;border:1px solid rgba(95,242,255,.5);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.card h1{margin:0;font:700 28px ui-monospace,Menlo,monospace;letter-spacing:.18em;color:var(--holo);text-align:center}
+.card p{margin:0;font-size:14px;line-height:1.5;color:#a9c4ca}
 .card input{background:#000;border:1px solid rgba(95,242,255,.4);color:var(--ink);border-radius:8px;padding:12px;font:14px ui-monospace,Menlo,monospace;width:100%}
-.card button{background:var(--holo);color:#001418;border:0;border-radius:8px;padding:14px;font:700 15px -apple-system,system-ui,sans-serif;letter-spacing:.04em}
+.card button{background:var(--holo);color:#001418;border:0;border-radius:8px;padding:13px;font:700 15px -apple-system,system-ui,sans-serif;letter-spacing:.03em}
 .card .ghost{background:transparent;color:var(--holo);border:1px solid rgba(95,242,255,.45)}
 .card small{color:#6d878e;font-size:12px;line-height:1.4}
+.row2{display:flex;gap:8px}.row2 button{flex:1}
 .err{color:var(--amber)!important}
-#hand{top:calc(58px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
-#vrb{top:calc(58px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
-.btn.on{border-color:var(--amber);color:var(--amber)}
-.cur{position:fixed;z-index:6;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:3px solid var(--holo);box-shadow:0 0 16px var(--holo);pointer-events:none;transition:transform .08s,border-color .08s}
-.cur::after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--holo)}
-.cur.pinch{transform:scale(.6);border-color:var(--amber);box-shadow:0 0 22px var(--amber)}
-.cur.hover{border-color:#fff}
-.cur.grab{transform:scale(.75);border-color:var(--amber);box-shadow:0 0 28px var(--amber)}
-body.vr video,body.vr #fx{visibility:hidden}
-body.vr .btn,body.vr #bar{display:none!important}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -51,25 +45,27 @@ body.vr .btn,body.vr #bar{display:none!important}
 <canvas id="gl"></canvas>
 <canvas id="hands"></canvas>
 
-<button class="btn" id="recenter" hidden>⟲ ORTALA</button>
-<button class="btn" id="gear" hidden>⚙ AYAR</button>
-<button class="btn" id="hand" hidden>✋ EL</button>
-<button class="btn" id="vrb" hidden>👓 GÖZLÜK</button>
-<div class="cur" id="cur1" hidden></div><div class="cur" id="cur2" hidden></div>
+<button class="btn" id="bMode" hidden>📷 MASA</button>
+<button class="btn" id="bHand" hidden>✋ EL</button>
+<button class="btn" id="bGear" hidden>⚙ AYAR</button>
+<button class="btn" id="bReset" hidden>⟲ DÜZEN</button>
 <div id="bar" hidden>
-  <input id="txt" type="text" placeholder="Yaz ya da mikrofona bas…" autocomplete="off" enterkeyhint="send">
-  <button id="mic">KONUŞ</button>
+  <input id="txt" type="text" placeholder="Yaz ya da “Jarvis, …” de" autocomplete="off" enterkeyhint="send">
+  <button id="mic">DİNLE</button>
 </div>
 
 <div class="sheet" id="start">
   <div class="card">
     <h1>J.A.R.V.I.S.</h1>
-    <p>Kamera açılacak ve holografik paneller etrafında belirecek. Telefonu çevirdikçe paneller havada yerinde kalır. Mikrofona basıp konuş, Jarvis cevap versin.</p>
+    <p><b>Masa modu:</b> Telefonu masaya dik koy, ön kamera seni görsün. Ellerini kaldır: bir elle çimdikle ve taşı, iki elle çimdikleyip aç-kapa ile büyüt-küçült. Konuşmak için “Jarvis, …” de.</p>
+    <div class="row2">
+      <button id="goDesk">MASA MODU</button>
+      <button id="goRoom" class="ghost">ODA (AR) MODU</button>
+    </div>
     <button id="puter0" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
-    <small id="puterState0">Anahtar gerekmez. Açılan pencerede ücretsiz Puter hesabıyla giriş yap.</small>
+    <small id="puterState0">Anahtar gerekmez. Açılan pencerede Puter hesabıyla giriş yap.</small>
     <input id="key0" type="password" placeholder="ya da API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
-    <small>Anahtar sadece bu telefonda saklanır, yalnızca ilgili servise gönderilir.</small>
-    <button id="go">JARVIS'İ BAŞLAT</button>
+    <small>Anahtar sadece bu telefonda saklanır.</small>
     <p id="startErr" class="err" hidden></p>
   </div>
 </div>
@@ -80,7 +76,7 @@ body.vr .btn,body.vr #bar{display:none!important}
     <button id="puter1" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
     <small id="puterState1">Anahtarsız Claude için Puter hesabıyla giriş yap.</small>
     <input id="key1" type="password" placeholder="API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
-    <small>Anahtar girersen önce o kullanılır. Boş bırakırsan Puter üzerinden Claude kullanılır.</small>
+    <small>Anahtar girersen önce o kullanılır.</small>
     <button id="save">KAYDET</button>
     <button class="ghost" id="close">KAPAT</button>
   </div>
@@ -96,15 +92,12 @@ window.HJHands = {
   async load(){
     if (hl) return hl;
     const fs = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-    const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:1, minHandDetectionConfidence:0.4, minHandPresenceConfidence:0.4, minTrackingConfidence:0.4 });
+    const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:2, minHandDetectionConfidence:0.45, minHandPresenceConfidence:0.45, minTrackingConfidence:0.45 });
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('zaman aşımı')), ms))]);
-    const order = ios ? ["CPU", "GPU"] : ["GPU", "CPU"];
-    let lastErr;
-    for (const d of order){
-      try { hl = await withTimeout(HandLandmarker.createFromOptions(fs, opts(d)), 45000); return hl; } catch(e){ lastErr = e; }
-    }
-    throw lastErr;
+    const to = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('zaman aşımı')), ms))]);
+    let last;
+    for (const d of (ios ? ["CPU","GPU"] : ["GPU","CPU"])){ try { hl = await to(HandLandmarker.createFromOptions(fs, opts(d)), 45000); return hl; } catch(e){ last = e; } }
+    throw last;
   },
   detect(video, t){ return hl ? hl.detectForVideo(video, t) : null; }
 };
@@ -112,573 +105,580 @@ window.HJHands = {
 <script>
 (() => {
 const $ = id => document.getElementById(id);
-const HOLO = '#5ff2ff', AMBER = '#ffb547';
-const store = { get(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+const HOLO = '#5ff2ff', AMBER = '#ffb547', INK = 'rgba(214,236,240,.92)';
+const store = {
+  get(k, d=''){ try { const v = localStorage.getItem(k); return v == null ? d : v; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+};
 $('key0').value = store.get('groqKey'); $('key1').value = store.get('groqKey');
 
-// ---------------- state ----------------
-const S = { mode:'idle', you:'', answer:'Bugün ne inşa ediyoruz, efendim?', level:0 };
+// ============ USER PROFILE ============
+const USER = 'smd';
+const PROJECTS = [
+  { name:'Famira', desc:'Instagram kayıtları için AI ikinci beyin · App Store\'da canlı' },
+  { name:'Atlas', desc:'Finansal sinyal platformu · Flutter + Python botlar' },
+  { name:'FreelanceLedger', desc:'Freelancer gelir-gider takibi · Shipaton' },
+  { name:'PromptForge', desc:'Web tabanlı AI prompt ürünü' },
+  { name:'Holo-Jarvis', desc:'Bu sistem · holografik asistan' },
+  { name:'Bahçem Peyzaj', desc:'Peyzaj işi · Instagram içerikleri' }
+];
+
+// ============ STATE ============
+let MODE = 'desk';
+const S = { mode:'idle', you:'', answer:'Bugün ne inşa ediyoruz, efendim?' };
 const history = [];
+let notes = []; try { notes = JSON.parse(store.get('notes','[]')) || []; } catch(e){ notes = []; }
+const saveNotes = () => store.set('notes', JSON.stringify(notes.slice(0, 20)));
+let weather = null;
+let listenOn = false;
 
-// ---------------- three.js ----------------
+// ============ THREE ============
 const renderer = new THREE.WebGLRenderer({ canvas:$('gl'), alpha:true, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.05, 50);
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.05, 50);
 const hud = new THREE.Group(); scene.add(hud);
-function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
-addEventListener('resize', resize); resize();
+const D = 2.6;
+function viewSize(){ const h = 2*D*Math.tan(camera.fov*Math.PI/360); return { w: h*camera.aspect, h }; }
 
-// ---------------- canvas drawing helpers ----------------
-function glow(ctx, c=HOLO, b=14){ ctx.shadowColor = c; ctx.shadowBlur = b; }
+// ============ DRAW HELPERS ============
+function glow(ctx, c=HOLO, b=12){ ctx.shadowColor = c; ctx.shadowBlur = b; }
 function frame(ctx, w, h, c=HOLO){
   ctx.save(); glow(ctx, c, 10);
   ctx.fillStyle = 'rgba(95,242,255,0.07)'; ctx.fillRect(8,8,w-16,h-16);
   ctx.strokeStyle = 'rgba(95,242,255,0.45)'; ctx.lineWidth = 2; ctx.strokeRect(8,8,w-16,h-16);
-  ctx.strokeStyle = c; ctx.lineWidth = 5; const L = 56;
+  ctx.strokeStyle = c; ctx.lineWidth = 5; const L = 50;
   [[8,8,1,1],[w-8,8,-1,1],[8,h-8,1,-1],[w-8,h-8,-1,-1]].forEach(([x,y,sx,sy])=>{ ctx.beginPath(); ctx.moveTo(x+L*sx,y); ctx.lineTo(x,y); ctx.lineTo(x,y+L*sy); ctx.stroke(); });
   ctx.restore();
 }
-function header(ctx, t, w, right, rightColor){
-  ctx.save(); glow(ctx); ctx.fillStyle = HOLO; ctx.font = '700 34px -apple-system,system-ui,sans-serif'; ctx.textBaseline = 'top';
-  ctx.fillText(t, 36, 30);
-  if (right){ ctx.fillStyle = rightColor || HOLO; glow(ctx, rightColor || HOLO); ctx.font = '700 24px ui-monospace,Menlo,monospace'; ctx.textAlign = 'right'; ctx.fillText(right, w-36, 36); }
-  ctx.globalAlpha = .6; ctx.fillRect(36, 80, w-72, 2); ctx.restore();
+function header(ctx, t, w, right, rc){
+  ctx.save(); glow(ctx); ctx.fillStyle = HOLO; ctx.font = '800 34px -apple-system,system-ui,sans-serif'; ctx.textBaseline = 'top'; ctx.fillText(t, 34, 28);
+  if (right){ ctx.fillStyle = rc || HOLO; glow(ctx, rc || HOLO); ctx.font = '700 24px ui-monospace,Menlo,monospace'; ctx.textAlign = 'right'; ctx.fillText(right, w-34, 34); }
+  ctx.globalAlpha = .6; ctx.fillRect(34, 78, w-68, 2); ctx.restore();
 }
 function wrap(ctx, text, maxW){
-  const out = []; for (const para of String(text).split('\n')){
-    let line = ''; for (const word of para.split(/\s+/)){ const t = line ? line+' '+word : word; if (ctx.measureText(t).width > maxW && line){ out.push(line); line = word; } else line = t; }
-    out.push(line);
-  } return out;
+  const out = []; for (const para of String(text).split('\n')){ let line = '';
+    for (const word of para.split(/\s+/)){ const t = line ? line+' '+word : word; if (ctx.measureText(t).width > maxW && line){ out.push(line); line = word; } else line = t; }
+    out.push(line); } return out;
 }
-function makePanel(w, h, worldW, draw){
+function clip(lines, n){ n = Math.max(1, n); if (lines.length > n){ lines.length = n; lines[n-1] = lines[n-1].replace(/\s*\S*$/,'') + ' …'; } return lines; }
+
+const panels = [];
+function makePanel(w, h, draw, opts={}){
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
-  const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), mat);
-  const p = { c, ctx:c.getContext('2d'), tex, mesh, w, h, draw, redraw(){ p.ctx.clearRect(0,0,w,h); draw(p.ctx,w,h); tex.needsUpdate = true; } };
-  mesh.userData.panel = p; p.redraw(); hud.add(mesh); return p;
+  const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false, side:THREE.DoubleSide,
+    blending: opts.normal ? THREE.NormalBlending : THREE.AdditiveBlending, opacity: 1 });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, h/w), mat);
+  const p = Object.assign({ c, ctx:c.getContext('2d'), tex, mesh, w, h, draw, fit:1, user:1, pop:0, born:performance.now() }, opts);
+  p.redraw = () => { p.ctx.clearRect(0,0,w,h); draw(p.ctx,w,h,p); tex.needsUpdate = true; };
+  mesh.userData.panel = p; panels.push(p); hud.add(mesh); p.redraw(); return p;
 }
-function place(p, angDeg, y, r=3.2){ const a = angDeg*Math.PI/180; p.mesh.position.set(Math.sin(a)*r, y, -Math.cos(a)*r); p.mesh.lookAt(0, y, 0); p.baseY = y; p.phase = Math.random()*6; }
-
+function removePanel(p){ hud.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); p.tex.dispose(); const i = panels.indexOf(p); if (i >= 0) panels.splice(i,1); }
 const pad = n => String(n).padStart(2,'0');
-const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const DAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
-// ---------------- panels ----------------
-const pTitle = makePanel(1024, 420, 1.15, (ctx,w,h)=>{
+// ============ CORE PANELS ============
+const pTop = makePanel(1400, 250, (ctx,w,h)=>{
   frame(ctx,w,h); const d = new Date();
-  ctx.save(); glow(ctx, HOLO, 22); ctx.fillStyle = HOLO; ctx.textAlign = 'center';
-  ctx.font = '800 112px -apple-system,system-ui,sans-serif'; ctx.fillText('J.A.R.V.I.S.', w/2, 150);
-  ctx.globalAlpha=.8; ctx.fillRect(170, 190, w-340, 3); ctx.globalAlpha=1;
-  ctx.font = '500 42px -apple-system,system-ui,sans-serif'; ctx.fillText('Hoş geldiniz, efendim.', w/2, 262);
-  ctx.font = '600 30px ui-monospace,Menlo,monospace';
-  ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}   ·   ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`, w/2, 350);
+  ctx.save(); glow(ctx, HOLO, 18); ctx.fillStyle = HOLO; ctx.textBaseline = 'middle';
+  ctx.font = '800 64px -apple-system,system-ui,sans-serif'; ctx.fillText('J.A.R.V.I.S.', 44, 95);
+  ctx.font = '500 26px ui-monospace,Menlo,monospace'; ctx.fillStyle = INK; ctx.fillText(`Hoş geldin ${USER}`, 48, 170);
+  ctx.textAlign = 'center'; ctx.fillStyle = HOLO; ctx.font = '700 92px ui-monospace,Menlo,monospace';
+  ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}`, w/2, 100);
+  ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK;
+  ctx.fillText(`${DAYS[d.getDay()]} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`, w/2, 180);
+  ctx.textAlign = 'right';
+  if (weather){
+    ctx.fillStyle = HOLO; ctx.font = '700 72px -apple-system,system-ui,sans-serif'; ctx.fillText(`${Math.round(weather.t)}°`, w-44, 95);
+    ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK;
+    ctx.fillText(`İstanbul · ${weather.txt} · ${Math.round(weather.min)}°/${Math.round(weather.max)}°`, w-44, 170);
+  } else { ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK; ctx.fillText('Hava durumu alınıyor…', w-44, 125); }
   ctx.restore();
 });
-place(pTitle, 0, 0.98, 3.0);
 
-const pDialog = makePanel(1024, 680, 1.25, (ctx,w,h)=>{
+const pDialog = makePanel(1024, 600, (ctx,w,h)=>{
   frame(ctx,w,h, S.mode==='listening' ? AMBER : HOLO);
-  const st = {idle:['● ÇEVRİMİÇİ',HOLO], listening:['● DİNLİYORUM',AMBER], thinking:['◌ İŞLENİYOR',AMBER], speaking:['▶ KONUŞUYOR',HOLO]}[S.mode];
+  const st = {idle:[listenOn ? '● DİNLEMEDE' : '● ÇEVRİMİÇİ', listenOn ? AMBER : HOLO], listening:['● DİNLİYORUM',AMBER], thinking:['◌ İŞLENİYOR',AMBER], speaking:['▶ KONUŞUYOR',HOLO]}[S.mode];
   header(ctx,'JARVIS',w,st[0],st[1]);
-  ctx.save(); glow(ctx, HOLO, 10); ctx.textBaseline = 'top';
-  let y = 110;
-  if (S.you){
-    ctx.fillStyle = 'rgba(214,236,240,.85)'; ctx.font = '500 30px -apple-system,system-ui,sans-serif';
-    const yl = wrap(ctx, 'Siz: ' + S.you, w-100).slice(0,2); yl.forEach((l,i)=>ctx.fillText(l, 50, y+i*40)); y += yl.length*40 + 24;
-  }
-  ctx.fillStyle = HOLO; ctx.font = `700 ${S.answer.length > 120 ? 38 : 48}px -apple-system,system-ui,sans-serif`;
-  const lh = S.answer.length > 120 ? 50 : 62;
-  const lines = wrap(ctx, S.answer, w-100); const maxL = Math.floor((h-130-y)/lh);
-  if (lines.length > maxL){ lines.length = maxL; lines[maxL-1] = lines[maxL-1].replace(/\s*\S*$/,'') + ' …'; }
-  lines.forEach((l,i)=>ctx.fillText(l, 50, y+i*lh));
-  ctx.strokeStyle = 'rgba(95,242,255,.7)'; ctx.lineWidth = 3; ctx.strokeRect(50, h-104, w-100, 62);
-  ctx.font = '600 26px ui-monospace,Menlo,monospace'; ctx.fillStyle = 'rgba(214,236,240,.85)';
-  ctx.fillText(S.mode==='listening' ? 'Sizi dinliyorum…' : 'Panele dokun ya da KONUŞ\'a bas ▌', 74, h-88);
-  ctx.restore();
+  ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline = 'top'; let y = 104;
+  if (S.you){ ctx.fillStyle = 'rgba(214,236,240,.8)'; ctx.font = '500 28px -apple-system,system-ui,sans-serif';
+    const yl = clip(wrap(ctx, 'Sen: ' + S.you, w-90), 2); yl.forEach((l,i)=>ctx.fillText(l, 46, y+i*38)); y += yl.length*38 + 20; }
+  const big = S.answer.length < 110; ctx.fillStyle = HOLO; ctx.font = `700 ${big ? 46 : 36}px -apple-system,system-ui,sans-serif`;
+  const lh = big ? 58 : 46; const lines = clip(wrap(ctx, S.answer, w-90), Math.floor((h-60-y)/lh));
+  lines.forEach((l,i)=>ctx.fillText(l, 46, y+i*lh)); ctx.restore();
 });
-place(pDialog, 0, 0.0, 2.6);
 
-const stats = { power:100, core:32, net:92, mem:64 };
-const pStatus = makePanel(800, 640, 0.72, (ctx,w,h)=>{
-  frame(ctx,w,h); header(ctx,'SİSTEM DURUMU',w);
-  const rows = [['GÜÇ',stats.power/100,'%'+stats.power],['ÇEKİRDEK',stats.core/100,stats.core+'°C'],['AĞ',stats.net/100, navigator.onLine?'Bağlı':'Yok'],['HOLOGRAM',1,'Aktif'],['BELLEK',stats.mem/100,'%'+stats.mem]];
-  ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline='top';
-  rows.forEach(([n,v,t],i)=>{ const y = 116+i*98;
-    ctx.fillStyle='rgba(214,236,240,.9)'; ctx.font='600 26px ui-monospace,Menlo,monospace'; ctx.textAlign='left'; ctx.fillText(n,40,y);
-    ctx.fillStyle=HOLO; ctx.font='700 26px -apple-system,system-ui,sans-serif'; ctx.textAlign='right'; ctx.fillText(t,w-40,y);
-    ctx.strokeStyle='rgba(95,242,255,.6)'; ctx.lineWidth=2; ctx.strokeRect(40,y+42,w-80,22);
-    const segs = Math.round(36*v); for(let s=0;s<segs;s++) ctx.fillRect(44+s*20,y+46,14,14);
+function rowAt(p, uv){ const py = (1-uv.y)*p.rows.H; const i = Math.floor((py - p.rows.top)/p.rows.h); return (i >= 0 && i < p.rows.n) ? i : -1; }
+
+const pProj = makePanel(760, 720, (ctx,w,h,p)=>{
+  frame(ctx,w,h); header(ctx,'PROJELERİM',w,'DOKUN → ODAK');
+  ctx.save(); ctx.textBaseline = 'top';
+  PROJECTS.forEach((pr,i)=>{ const y = 100 + i*100;
+    if (p.hoverRow === i){ ctx.fillStyle = 'rgba(95,242,255,.16)'; ctx.fillRect(22, y-6, w-44, 92); }
+    glow(ctx, HOLO, 8); ctx.fillStyle = HOLO; ctx.font = '700 34px -apple-system,system-ui,sans-serif'; ctx.fillText(pr.name, 40, y+4);
+    ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(214,236,240,.7)'; ctx.font = '400 22px -apple-system,system-ui,sans-serif'; ctx.fillText(pr.desc, 40, y+48);
+    ctx.fillStyle = 'rgba(95,242,255,.25)'; ctx.fillRect(40, y+88, w-80, 1);
   }); ctx.restore();
-});
-place(pStatus, -25, 0.05, 2.8);
+}, { hoverRow:-1, rows:{ top:100, h:100, n:PROJECTS.length, H:720 }, onTap(uv){
+  const i = rowAt(this, uv); if (i < 0) return; const pr = PROJECTS[i];
+  ask(`${pr.name} projem için bugün odaklanmam gereken tek somut adımı söyle. Proje: ${pr.desc}.`);
+}});
 
-let sweep = 0; const blips = Array.from({length:7},()=>({a:Math.random()*6.28,r:30+Math.random()*190}));
-const pRadar = makePanel(640, 640, 0.62, (ctx,w,h)=>{
-  frame(ctx,w,h); header(ctx,'TARAMA',w);
-  const cx=w/2, cy=h/2+30, R=220; ctx.save(); glow(ctx, HOLO, 8);
-  ctx.strokeStyle='rgba(95,242,255,.6)'; ctx.lineWidth=2;
-  [1,.72,.45,.18].forEach(k=>{ctx.beginPath();ctx.arc(cx,cy,R*k,0,6.283);ctx.stroke();});
-  ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy); ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R); ctx.stroke();
-  for(let k=0;k<40;k++){ const a = sweep - k*0.035; ctx.strokeStyle = `rgba(95,242,255,${(0.75*(1-k/40)).toFixed(3)})`; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(a), cy+R*Math.sin(a)); ctx.stroke(); }
-  ctx.fillStyle = AMBER; glow(ctx, AMBER, 12);
-  blips.forEach(b=>{ const d = ((sweep - b.a) % 6.283 + 6.283) % 6.283; const al = Math.max(0.15, 1 - d/4); ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(cx+b.r*Math.cos(b.a), cy+b.r*Math.sin(b.a), 7, 0, 6.283); ctx.fill(); });
-  ctx.restore();
-});
-place(pRadar, 25, 0.05, 2.8);
+const pNotes = makePanel(760, 720, (ctx,w,h,p)=>{
+  frame(ctx,w,h); header(ctx,'NOTLAR',w,'+ EKLE', AMBER);
+  ctx.save(); ctx.textBaseline = 'top';
+  if (!notes.length){ ctx.fillStyle = 'rgba(214,236,240,.65)'; ctx.font = '400 26px -apple-system,system-ui,sans-serif';
+    wrap(ctx, '“Jarvis, not al: …” de ya da + EKLE\'yi çimdikle.', w-80).forEach((l,i)=>ctx.fillText(l, 40, 120+i*36)); }
+  notes.slice(0,6).forEach((n,i)=>{ const y = 100 + i*100;
+    if (p.hoverRow === i){ ctx.fillStyle = 'rgba(95,242,255,.16)'; ctx.fillRect(22, y-6, w-44, 92); }
+    ctx.strokeStyle = n.done ? AMBER : HOLO; ctx.lineWidth = 3; ctx.strokeRect(40, y+14, 34, 34);
+    if (n.done){ ctx.beginPath(); ctx.moveTo(46,y+31); ctx.lineTo(55,y+41); ctx.lineTo(70,y+20); ctx.stroke(); }
+    glow(ctx, HOLO, 6); ctx.fillStyle = n.done ? 'rgba(214,236,240,.45)' : HOLO; ctx.font = '600 28px -apple-system,system-ui,sans-serif';
+    clip(wrap(ctx, n.t, w-150), 2).forEach((s,k)=>ctx.fillText(s, 96, y+10+k*36));
+    if (n.done){ ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,181,71,.8)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('tekrar dokun → sil', w-250, y+64); }
+  }); ctx.restore();
+}, { hoverRow:-1, rows:{ top:100, h:100, n:6, H:720 }, onTap(uv){
+  const py = (1-uv.y)*720;
+  if (py < 90 && uv.x > 0.6){ startListen('note'); return; }
+  const i = rowAt(this, uv); if (i < 0 || i >= notes.length) return;
+  if (notes[i].done) notes.splice(i,1); else notes[i].done = true;
+  saveNotes(); this.redraw();
+}});
 
-let wt = 0;
-const pVoice = makePanel(800, 420, 0.72, (ctx,w,h)=>{
-  frame(ctx,w,h); const live = S.mode==='listening' || S.mode==='speaking';
-  header(ctx,'SES ANALİZİ',w, live ? '● CANLI' : 'BEKLEMEDE', live ? AMBER : HOLO);
-  ctx.save(); glow(ctx, HOLO, 10); ctx.strokeStyle = HOLO; ctx.lineWidth = 4; ctx.beginPath();
-  const amp = live ? 70 + 40*S.level : 12;
-  for (let x=40; x<=w-40; x+=4){ const t=(x-40)/(w-80); const y = 240 + Math.sin(t*Math.PI)*amp*Math.sin(x*0.09+wt*8)*Math.cos(x*0.021-wt*3); x===40?ctx.moveTo(x,y):ctx.lineTo(x,y); }
-  ctx.stroke(); ctx.fillStyle = 'rgba(95,242,255,.55)';
-  for (let x=40; x<w-40; x+=24){ const hh = live ? 8+Math.abs(Math.sin(x*0.3+wt*10))*40 : 6; ctx.fillRect(x, h-40-hh, 14, hh); }
-  ctx.restore();
-});
-place(pVoice, -46, -0.6, 2.9);
+// ============ LAYOUT ============
+function setPos(p, x, y, widthWorld){ p.mesh.position.set(x, y, -D); p.fit = widthWorld; p.baseY = y; }
+function layout(){
+  const { w, h } = viewSize(); const portrait = camera.aspect < 1;
+  const L = portrait ? {
+    top:[0, h*0.36, w*0.94], dialog:[0, h*0.07, w*0.94], proj:[-w*0.245, -h*0.27, w*0.47], notes:[w*0.245, -h*0.27, w*0.47]
+  } : {
+    top:[0, h*0.38, w*0.56], dialog:[0, h*0.0, w*0.44], proj:[-w*0.36, -h*0.04, w*0.25], notes:[w*0.36, -h*0.04, w*0.25]
+  };
+  [[pTop,'top'],[pDialog,'dialog'],[pProj,'proj'],[pNotes,'notes']].forEach(([p,k])=>{ if (!p.moved) setPos(p, ...L[k]); });
+}
+function resetLayout(){ [pTop,pDialog,pProj,pNotes].forEach(p => { p.moved = false; p.user = 1; }); layout(); SFX.open(); }
 
-const pLoc = makePanel(640, 640, 0.6, (ctx,w,h)=>{
-  frame(ctx,w,h); header(ctx,'KONUM',w);
-  ctx.save(); ctx.strokeStyle='rgba(95,242,255,.35)'; ctx.lineWidth=2;
-  for(let r=0;r<8;r++) for(let c=0;c<9;c++){ const x=70+c*58+(r%2?29:0), y=130+r*48; if(x>590) continue; ctx.beginPath(); for(let k=0;k<6;k++){const a=(60*k+30)*Math.PI/180; const px=x+18*Math.cos(a), py=y+18*Math.sin(a); k?ctx.lineTo(px,py):ctx.moveTo(px,py);} ctx.closePath(); ctx.stroke(); }
-  glow(ctx, AMBER, 12); ctx.strokeStyle=AMBER; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(w/2,330,30,0,6.283); ctx.stroke();
-  ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(w/2,270); ctx.lineTo(w/2,390); ctx.moveTo(w/2-70,330); ctx.lineTo(w/2+70,330); ctx.stroke();
-  glow(ctx, HOLO, 14); ctx.fillStyle=HOLO; ctx.textAlign='center'; ctx.font='800 46px -apple-system,system-ui,sans-serif'; ctx.fillText('İSTANBUL', w/2, 560);
-  ctx.font='600 24px ui-monospace,Menlo,monospace'; ctx.fillText('41.01° K   28.97° D', w/2, 604); ctx.restore();
-});
-place(pLoc, 46, -0.6, 2.9);
-
-const panels = [pTitle, pDialog, pStatus, pRadar, pVoice, pLoc];
-setInterval(()=>{ pTitle.redraw(); stats.mem = 58 + Math.round(Math.random()*12); stats.core = 30 + Math.round(Math.random()*5); pStatus.redraw(); }, 1000);
-
-// ---------------- device orientation ----------------
-const zee = new THREE.Vector3(0,0,1), eul = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
-let ori = null, gotOri = false;
-addEventListener('deviceorientation', e => { if (e.alpha == null) return; ori = e; gotOri = true; });
-function screenAngle(){ return ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * Math.PI/180; }
-let dragYaw = 0, dragPitch = 0;
-function updateCamera(){
-  if (ori){ const d = Math.PI/180; eul.set(ori.beta*d, ori.alpha*d, -ori.gamma*d, 'YXZ'); camera.quaternion.setFromEuler(eul); camera.quaternion.multiply(q1); camera.quaternion.multiply(q0.setFromAxisAngle(zee, -screenAngle())); }
-  else { camera.rotation.set(dragPitch, dragYaw, 0, 'YXZ'); }
-}
-function recenter(){ updateCamera(); const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); hud.rotation.y = Math.atan2(-f.x, -f.z); }
-$('recenter').onclick = () => { recenter(); SFX.open(); };
-
-// fallback drag-to-look (no gyro)
-let dragging = null;
-$('gl').addEventListener('pointerdown', e => { dragging = { x:e.clientX, y:e.clientY, moved:false }; });
-$('gl').addEventListener('pointermove', e => { if (!dragging || gotOri) return; const dx = e.clientX-dragging.x, dy = e.clientY-dragging.y; if (Math.abs(dx)+Math.abs(dy) > 4) dragging.moved = true; dragYaw += dx*0.005; dragPitch = Math.max(-1.2, Math.min(1.2, dragPitch + dy*0.005)); dragging.x = e.clientX; dragging.y = e.clientY; });
-$('gl').addEventListener('pointerup', e => { const d = dragging; dragging = null; if (d && !d.moved) tapAt(e.clientX, e.clientY); });
-
-// tap on a panel
-const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
-function hitPanel(nx, ny, cam){
-  v2.set(nx, ny); ray.setFromCamera(v2, cam);
-  const hit = ray.intersectObjects(panels.map(p=>p.mesh))[0];
-  return hit ? hit.object.userData.panel : null;
-}
-let lastTap = 0;
-function tapAt(x, y){
-  const now = performance.now();
-  if (vr){ if (now - lastTap < 400) toggleVR(); lastTap = now; return; }
-  lastTap = now;
-  const p = hitPanel(x/innerWidth*2-1, -(y/innerHeight)*2+1, camera); if (p) activatePanel(p);
-}
-function activatePanel(p){
-  p.pop = 1; SFX.tap();
-  if (p === pDialog) toggleListen();
-  else if (p === pStatus) ask('Sistem durumunu kısaca raporla.');
-  else if (p === pRadar) ask('Etrafı taradın, ne buldun? Kısa ve esprili söyle.');
-  else if (p === pLoc) ask('Bulunduğumuz şehir İstanbul hakkında kısa ilginç bir bilgi ver.');
-  else if (p === pTitle) ask('Kendini kısaca tanıt.');
-  else if (p === pVoice) toggleListen();
-}
-
-// ---------------- sound fx (synthesized) ----------------
-let actx = null;
-function audioUnlock(){ try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){} }
-function tone(f0, f1, dur, type='sine', vol=0.08, delay=0){
-  if (!actx) return; const t0 = actx.currentTime + delay;
-  const o = actx.createOscillator(), g = actx.createGain();
-  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(30,f1), t0+dur);
-  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.02);
-}
-function whoosh(dur=0.35, vol=0.06, delay=0){
-  if (!actx) return; const t0 = actx.currentTime + delay; const n = actx.sampleRate*dur;
-  const b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
-  const src = actx.createBufferSource(); src.buffer = b; const f = actx.createBiquadFilter(); f.type='bandpass'; f.Q.value = 2;
-  f.frequency.setValueAtTime(400, t0); f.frequency.exponentialRampToValueAtTime(3000, t0+dur);
-  const g = actx.createGain(); g.gain.value = vol; src.connect(f).connect(g).connect(actx.destination); src.start(t0);
-}
-const SFX = {
-  hover: () => tone(2200, 2600, 0.04, 'sine', 0.03),
-  tap:   () => { tone(880, 880, 0.06, 'square', 0.035); tone(1320, 1320, 0.08, 'square', 0.035, 0.06); },
-  grab:  () => { tone(300, 600, 0.15, 'sawtooth', 0.03); whoosh(0.2, 0.04); },
-  drop:  () => tone(600, 300, 0.12, 'triangle', 0.05),
-  open:  () => { whoosh(0.45, 0.06); tone(400, 1600, 0.35, 'sine', 0.05); },
-  boot:  () => { tone(110, 880, 1.2, 'sawtooth', 0.025); whoosh(1.0, 0.05, 0.2); tone(1760, 1760, 0.15, 'sine', 0.05, 1.3); tone(2640, 2640, 0.2, 'sine', 0.05, 1.45); },
-  listen:() => { tone(660, 990, 0.12, 'sine', 0.06); },
-  answer:() => { tone(990, 660, 0.12, 'sine', 0.05); }
-};
-
-// ---------------- ambient particles ----------------
-(() => {
-  const g = new THREE.BufferGeometry(), N = 500, pos = new Float32Array(N*3);
-  for (let i=0;i<N;i++){ const r = 1.2 + Math.random()*3.2, a = Math.random()*6.283; pos[i*3]=Math.cos(a)*r; pos[i*3+1]=(Math.random()-.5)*3; pos[i*3+2]=Math.sin(a)*r; }
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const m = new THREE.PointsMaterial({ color:0x5ff2ff, size:0.018, transparent:true, opacity:0.7, blending:THREE.AdditiveBlending, depthWrite:false });
-  const pts = new THREE.Points(g, m); pts.name = 'dust'; scene.add(pts);
-})();
-
-// ---------------- boot sequence ----------------
-let bootAt = -1;
-function startBoot(){ bootAt = performance.now(); panels.forEach((p,i)=>{ p.bootDelay = [0.15,0,0.45,0.6,0.85,1.0][i] ?? 0.3; }); SFX.boot(); }
-const easeOutBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
-function bootFactor(p, t){
-  if (bootAt < 0) return 0;
-  const k = Math.min(1, Math.max(0, ((t - bootAt)/1000 - (p.bootDelay||0)) / 0.55));
-  if (k < 1){ p.mesh.material.opacity = (Math.random() < 0.3 ? 0.35 : 1) * Math.min(1, k*1.6); } else if (!p.isImage) p.mesh.material.opacity = 1;
-  return k <= 0 ? 0.001 : easeOutBack(k);
-}
-
-// ---------------- lazy follow (HUD stays around you) ----------------
-let follow = true;
-function followTick(){
-  if (!follow || grab) return;
-  const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  const camYaw = Math.atan2(-f.x, -f.z);
-  let diff = camYaw - hud.rotation.y; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-  if (Math.abs(diff) > 0.6 || hud.userData.catching){ hud.userData.catching = Math.abs(diff) > 0.05; hud.rotation.y += diff * 0.06; }
-}
-
-// ---------------- holographic hand skeleton ----------------
-const hcv = $('hands'), hctx = hcv.getContext('2d');
-function sizeHands(){ const d = Math.min(devicePixelRatio, 2); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
-addEventListener('resize', sizeHands); sizeHands();
-const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-function drawHand(lm, mapPt, offsetX, active){
-  const P = lm.map(mapPt);
-  hctx.save(); hctx.translate(offsetX, 0);
-  hctx.shadowColor = active ? AMBER : HOLO; hctx.shadowBlur = 14; hctx.strokeStyle = active ? 'rgba(255,181,71,.9)' : 'rgba(95,242,255,.85)'; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
-  hctx.beginPath(); BONES.forEach(([a,b])=>{ hctx.moveTo(P[a][0],P[a][1]); hctx.lineTo(P[b][0],P[b][1]); }); hctx.stroke();
-  hctx.fillStyle = '#e8fdff';
-  P.forEach((q,i)=>{ const r = [4,8,12,16,20].includes(i) ? 5 : 3; hctx.beginPath(); hctx.arc(q[0],q[1],r,0,6.283); hctx.fill(); });
-  // palm ring
-  const c = P[9]; hctx.strokeStyle = 'rgba(95,242,255,.5)'; hctx.lineWidth = 1.5; hctx.beginPath(); hctx.arc(c[0], c[1], 26, 0, 6.283); hctx.stroke();
-  hctx.restore();
-}
-
-// ---------------- render loop ----------------
-let last = performance.now();
-function loop(t){
-  const dt = Math.min(.05, (t-last)/1000); last = t;
-  sweep += dt*1.6; wt += dt;
-  S.level = S.mode==='speaking' ? 0.5+0.5*Math.sin(t*0.02) : (S.mode==='listening' ? 0.4+0.4*Math.sin(t*0.013) : 0);
-  pRadar.redraw(); pVoice.redraw();
-  panels.forEach(p => { if (p !== (grab && grab.p)) p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + (p.phase||0))*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = (p.userScale||1) * (1 + 0.08*p.pop + (p.hover ? 0.05 : 0)) * bootFactor(p, t); p.mesh.scale.set(s,s,s); });
-  followTick(); const dust = scene.getObjectByName('dust'); if (dust) dust.rotation.y += dt*0.02;
-  if (handsOn) handTick(t);
-  updateCamera(); renderFrame(); requestAnimationFrame(loop);
-}
-
-// ---------------- stereo (headset) mode ----------------
-let vr = false, vtex = null, wake = null;
-const eyes = [new THREE.PerspectiveCamera(72, 1, 0.05, 50), new THREE.PerspectiveCamera(72, 1, 0.05, 50)];
-function cropBg(aspect){
-  const v = $('cam'); if (!vtex || !v.videoWidth) return;
-  const va = v.videoWidth / v.videoHeight;
-  if (va > aspect){ vtex.repeat.set(aspect/va, 1); vtex.offset.set((1-aspect/va)/2, 0); }
-  else { vtex.repeat.set(1, va/aspect); vtex.offset.set(0, (1-va/aspect)/2); }
-}
-function renderFrame(){
-  const W = innerWidth, H = innerHeight;
-  if (!vr){ renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); renderer.render(scene, camera); return; }
-  const a = (W/2)/H; cropBg(a); renderer.setScissorTest(true);
-  eyes.forEach((c, i) => {
-    c.position.copy(camera.position); c.quaternion.copy(camera.quaternion); c.translateX(i ? 0.032 : -0.032);
-    c.aspect = a; c.updateProjectionMatrix();
-    renderer.setViewport(i*W/2, 0, W/2, H); renderer.setScissor(i*W/2, 0, W/2, H); renderer.render(scene, c);
-  });
-}
-async function toggleVR(){
-  vr = !vr; document.body.classList.toggle('vr', vr);
-  if (vr){
-    if (!vtex){ vtex = new THREE.VideoTexture($('cam')); vtex.minFilter = THREE.LinearFilter; }
-    scene.background = vtex;
-    try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch(e){}
-    if (!handsOn) toggleHands();
-    S.you = ''; S.answer = 'Gözlük modu aktif efendim. Telefonu yatay olarak gözlüğe takın. Çıkmak için ekrana iki kez dokunun.'; speak(S.answer);
-    setTimeout(recenter, 2500);
-  } else {
-    scene.background = null;
-    try { if (wake){ await wake.release(); wake = null; } } catch(e){}
-  }
-}
-$('vrb').onclick = toggleVR;
-
-// ---------------- hand control ----------------
-let handsOn = false, lastVT = -1, pinchDown = false, hoverP = null, sm = null, lostAt = 0;
-const cur1 = $('cur1'), cur2 = $('cur2');
-async function toggleHands(){
-  if (handsOn){ handsOn = false; hctx.clearRect(0,0,innerWidth,innerHeight); cur1.hidden = cur2.hidden = true; setHover(null); $('hand').classList.remove('on'); $('hand').textContent = '✋ EL'; return; }
-  if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
-  $('hand').textContent = '✋ YÜKLENİYOR…'; S.you=''; S.answer = 'El takibi modeli indiriliyor efendim (yaklaşık 8 MB). Bu ilk seferde biraz sürebilir.'; pDialog.redraw();
-  try {
-    await window.HJHands.load(); handsOn = true; $('hand').classList.add('on'); $('hand').textContent = '✋ EL: AÇIK';
-    if (!vr){ S.you=''; S.answer = 'El kontrolü aktif efendim. Elinizi kameranın önüne uzatın, panelin üstüne getirin ve başparmakla işaret parmağınızı birleştirin.'; speak(S.answer); }
-  } catch(e){ $('hand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim. Hata: ' + (e && e.message ? e.message : e) + '. Wi-Fi ile tekrar deneyin.'; pDialog.redraw(); }
-}
-$('hand').onclick = toggleHands;
-function setHover(p){ if (hoverP === p) return; if (p) SFX.hover(); if (hoverP) hoverP.hover = false; hoverP = p; if (p) p.hover = true; }
-let grab = null, pinchStart = null;
-const hudInv = new THREE.Quaternion(), tmpDir = new THREE.Vector3();
-function rayDirLocal(nx, ny, cam){
-  v2.set(nx, ny); ray.setFromCamera(v2, cam);
-  hudInv.copy(hud.quaternion).invert();
-  return tmpDir.copy(ray.ray.direction).applyQuaternion(hudInv).normalize();
-}
-function handTick(t){
-  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT) return;
-  lastVT = v.currentTime;
-  let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
-  const lm = r && r.landmarks && r.landmarks[0];
-  hctx.clearRect(0, 0, innerWidth, innerHeight);
-  if (!lm){ if (t - lostAt > 300){ cur1.hidden = cur2.hidden = true; setHover(null); pinchDown = false; grab = null; pinchStart = null; sm = null; } return; }
-  lostAt = t;
-  const va = v.videoWidth / v.videoHeight;
-  const d = (a, b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
-  const handSize = d(lm[0], lm[9]) || 0.1;
-  const pinch = d(lm[4], lm[8]) / handSize;
-  const raw = { x:(lm[4].x + lm[8].x)/2, y:(lm[4].y + lm[8].y)/2 };
-  sm = sm ? { x: sm.x*0.5 + raw.x*0.5, y: sm.y*0.5 + raw.y*0.5 } : raw;
-  const W = innerWidth, H = innerHeight, vw = vr ? W/2 : W;
-  const sc = Math.max(vw / v.videoWidth, H / v.videoHeight);
-  const ex = (vw - v.videoWidth*sc)/2 + sm.x*v.videoWidth*sc, ey = (H - v.videoHeight*sc)/2 + sm.y*v.videoHeight*sc;
-  cur1.hidden = false; cur1.style.left = ex + 'px'; cur1.style.top = ey + 'px';
-  if (vr){ cur2.hidden = false; cur2.style.left = (ex + W/2) + 'px'; cur2.style.top = ey + 'px'; } else cur2.hidden = true;
-  const mapPt = q => [ (vw - v.videoWidth*sc)/2 + q.x*v.videoWidth*sc, (H - v.videoHeight*sc)/2 + q.y*v.videoHeight*sc ];
-  drawHand(lm, mapPt, 0, pinchDown); if (vr) drawHand(lm, mapPt, W/2, pinchDown);
-  const nx = ex/vw*2-1, ny = -(ey/H)*2+1, cam = vr ? eyes[0] : camera;
-  const isPinch = pinchDown ? pinch < 0.5 : pinch < 0.33;
-
-  if (isPinch && !pinchDown){
-    pinchDown = true;
-    pinchStart = { t, x:ex, y:ey, p: hitPanel(nx, ny, cam), size: handSize };
-  }
-  if (pinchDown && isPinch){
-    const moved = Math.hypot(ex - pinchStart.x, ey - pinchStart.y);
-    if (!grab && pinchStart.p && (t - pinchStart.t > 350 || moved > 30)){
-      const p = pinchStart.p;
-      grab = { p, dist: p.mesh.position.length(), scale0: p.userScale || 1, size0: handSize }; SFX.grab();
-    }
-    if (grab){
-      const dir = rayDirLocal(nx, ny, cam);
-      const pos = dir.multiplyScalar(grab.dist);
-      grab.p.mesh.position.copy(pos); grab.p.baseY = pos.y;
-      grab.p.mesh.lookAt(0, pos.y, 0);
-      // pull hand toward camera → bigger, push away → smaller
-      grab.p.userScale = Math.max(0.35, Math.min(3, grab.scale0 * Math.pow(handSize / grab.size0, 1.6)));
-    }
-  }
-  if (pinchDown && !isPinch){
-    if (!grab && pinchStart && pinchStart.p && t - pinchStart.t < 500) activatePanel(pinchStart.p); else if (grab) SFX.drop();
-    pinchDown = false; grab = null; pinchStart = null;
-  }
-  const hov = grab ? grab.p : hitPanel(nx, ny, cam);
-  setHover(hov);
-  [cur1, cur2].forEach(c => { c.classList.toggle('pinch', isPinch); c.classList.toggle('hover', !!hov); c.classList.toggle('grab', !!grab); });
-}
-
-// ---------------- research panels (Wikipedia) ----------------
-let pInfo = null, pImg = null, info = null, infoImg = null;
-function spawnInFront(p, offsetDeg, y, r){
-  const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).applyQuaternion(hudInv.copy(hud.quaternion).invert());
-  const az = Math.atan2(f.x, -f.z)*180/Math.PI + offsetDeg;
-  place(p, az, y, r); p.pop = 1;
-}
-function ensureResearchPanels(){
-  if (pInfo) return;
-  pInfo = makePanel(900, 760, 1.05, (ctx,w,h)=>{
-    frame(ctx,w,h); header(ctx,'ARAŞTIRMA',w, info ? 'VİKİPEDİ' : '…');
-    if (!info) return;
-    ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline='top'; ctx.fillStyle = HOLO;
-    ctx.font = '800 44px -apple-system,system-ui,sans-serif';
-    const tl = wrap(ctx, info.title, w-80).slice(0,2); tl.forEach((l,i)=>ctx.fillText(l, 40, 106+i*52));
-    let y = 106 + tl.length*52 + 18;
-    ctx.fillStyle = 'rgba(214,236,240,.92)'; ctx.font = '400 28px -apple-system,system-ui,sans-serif';
-    const lines = wrap(ctx, info.text, w-80); const maxL = Math.floor((h-60-y)/38);
-    if (lines.length > maxL){ lines.length = maxL; lines[maxL-1] = lines[maxL-1].replace(/\s*\S*$/,'') + ' …'; }
-    lines.forEach((l,i)=>ctx.fillText(l, 40, y+i*38));
-    ctx.restore();
-  });
-  pImg = makePanel(800, 800, 0.95, (ctx,w,h)=>{
-    frame(ctx,w,h); header(ctx,'GÖRSEL',w, 'TUT · TAŞI · ÇEK');
-    if (!infoImg){ ctx.save(); ctx.fillStyle='rgba(214,236,240,.7)'; ctx.font='500 28px -apple-system,system-ui,sans-serif'; ctx.textAlign='center'; ctx.fillText(info ? 'Görsel bulunamadı' : 'Yükleniyor…', w/2, h/2); ctx.restore(); return; }
-    const bx = 30, by = 100, bw = w-60, bh = h-130; const k = Math.min(bw/infoImg.width, bh/infoImg.height);
-    const iw = infoImg.width*k, ih = infoImg.height*k;
-    ctx.globalAlpha = 0.95; ctx.drawImage(infoImg, bx+(bw-iw)/2, by+(bh-ih)/2, iw, ih); ctx.globalAlpha = 1;
-  });
-  pImg.mesh.material.blending = THREE.NormalBlending; pImg.mesh.material.opacity = 0.96; pImg.isImage = true; pInfo.bootDelay = 0; pImg.bootDelay = 0;
-  panels.push(pInfo, pImg);
-}
+// ============ RESEARCH / IMAGES ============
+let research = [];
+function clearResearch(){ research.forEach(removePanel); research = []; }
 async function wikiFind(q, lang){
   const j = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&origin=*&srsearch=${encodeURIComponent(q)}`)).json();
   const title = j.query && j.query.search && j.query.search[0] && j.query.search[0].title; if (!title) return null;
   const s = await (await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g,'_'))}`)).json();
+  let en = lang === 'en' ? title : null;
+  if (lang !== 'en'){ try { const ll = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=langlinks&lllang=en&format=json&origin=*`)).json();
+    const pg = Object.values((ll.query && ll.query.pages) || {})[0]; en = (pg && pg.langlinks && pg.langlinks[0] && pg.langlinks[0]['*']) || null; } catch(e){} }
   let img = s.thumbnail && s.thumbnail.source; if (img) img = img.replace(/\/\d+px-/, '/800px-'); else if (s.originalimage) img = s.originalimage.source;
-  return { title: s.title || title, text: s.extract || '', img };
+  return { title: s.title || title, text: s.extract || '', img, en };
 }
-async function research(q){
-  ensureResearchPanels(); info = null; infoImg = null; SFX.open(); follow = false; setTimeout(()=>{ follow = true; }, 4000);
-  spawnInFront(pInfo, -17, 0.0, 2.6); spawnInFront(pImg, 17, 0.0, 2.6);
-  pInfo.redraw(); pImg.redraw();
-  try {
-    info = await wikiFind(q, 'tr') || await wikiFind(q, 'en');
-    if (!info) info = { title: q, text: 'Bu konuda kaynak bulamadım efendim.' };
-    pInfo.redraw(); pImg.redraw();
-    if (info.img){
-      const im = new Image(); im.crossOrigin = 'anonymous';
-      im.onload = () => { infoImg = im; pImg.redraw(); pImg.pop = 1; };
-      im.onerror = () => { pImg.redraw(); };
-      im.src = info.img;
-    }
-  } catch(e){ info = { title: q, text: 'Araştırma sırasında bağlantı hatası oldu efendim.' }; pInfo.redraw(); pImg.redraw(); }
+async function commonsImages(q, n=4){
+  const j = await (await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=${n*3}&gsrsearch=${encodeURIComponent('filetype:bitmap ' + q)}&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json&origin=*`)).json();
+  return Object.values((j.query && j.query.pages) || {}).sort((a,b)=>a.index-b.index).map(p => p.imageinfo && p.imageinfo[0]).filter(i => i && /jpeg|png/.test(i.mime)).map(i => i.thumburl || i.url).slice(0, n);
+}
+function infoPanel(info){
+  return makePanel(900, 700, (ctx,w,h)=>{
+    frame(ctx,w,h); header(ctx,'ARAŞTIRMA',w,'✕ KAPAT', AMBER);
+    ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline = 'top'; ctx.fillStyle = HOLO; ctx.font = '800 42px -apple-system,system-ui,sans-serif';
+    const tl = clip(wrap(ctx, info.title, w-80), 2); tl.forEach((l,i)=>ctx.fillText(l, 40, 100+i*50));
+    let y = 100 + tl.length*50 + 16; ctx.shadowBlur = 0; ctx.fillStyle = INK; ctx.font = '400 27px -apple-system,system-ui,sans-serif';
+    clip(wrap(ctx, info.text, w-80), Math.floor((h-70-y)/37)).forEach((l,i)=>ctx.fillText(l, 40, y+i*37));
+    ctx.fillStyle = 'rgba(214,236,240,.5)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('Kaynak: Vikipedi', 40, h-44); ctx.restore();
+  }, { transient:true, onTap(uv){ if ((1-uv.y)*700 < 90 && uv.x > 0.6) clearResearch(); } });
+}
+function imagePanel(src){
+  const p = makePanel(800, 800, (ctx,w,h,pp)=>{
+    if (!pp.img){ frame(ctx,w,h); ctx.fillStyle = INK; ctx.font = '500 28px -apple-system,system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText(pp.failed ? 'Görsel yüklenemedi' : 'Yükleniyor…', w/2, h/2); return; }
+    const im = pp.img, k = Math.min((w-24)/im.width, (h-24)/im.height), iw = im.width*k, ih = im.height*k;
+    ctx.drawImage(im, (w-iw)/2, (h-ih)/2, iw, ih);
+    ctx.save(); glow(ctx, HOLO, 14); ctx.strokeStyle = HOLO; ctx.lineWidth = 4; ctx.strokeRect((w-iw)/2, (h-ih)/2, iw, ih); ctx.restore();
+  }, { transient:true, normal:true, onTap(){
+    this.focus = !this.focus;
+    if (this.focus){ this.prev = { x:this.mesh.position.x, y:this.mesh.position.y, user:this.user }; this.mesh.position.set(0, 0, -D + 0.3); this.user = 1.8; }
+    else if (this.prev){ this.mesh.position.set(this.prev.x, this.prev.y, -D + 0.15); this.user = this.prev.user; }
+    this.baseY = this.mesh.position.y;
+  }});
+  const im = new Image(); im.crossOrigin = 'anonymous';
+  im.onload = () => { p.img = im; p.redraw(); p.pop = 1; };
+  im.onerror = () => { p.failed = true; p.redraw(); };
+  im.src = src; return p;
+}
+function placeTransient(p, x, y, wWorld){ p.mesh.position.set(x, y, -D + 0.15); p.fit = wWorld; p.baseY = y; p.moved = true; p.pop = 1; research.push(p); }
+async function doResearch(q, withImages){
+  clearResearch(); SFX.open();
+  const { w, h } = viewSize(); const portrait = camera.aspect < 1;
+  S.you = (withImages ? 'Görsel: ' : 'Araştır: ') + q; S.mode = 'thinking'; S.answer = 'Arıyorum efendim…'; pDialog.redraw();
+  let info = null;
+  try { info = await wikiFind(q, 'tr') || await wikiFind(q, 'en'); } catch(e){}
+  if (!withImages){
+    const ip = infoPanel(info || { title:q, text:'Bu konuda kaynak bulamadım efendim.' });
+    placeTransient(ip, portrait ? 0 : -w*0.14, portrait ? h*0.02 : 0, portrait ? w*0.9 : w*0.4);
+    if (info && info.img){ const imp = imagePanel(info.img); placeTransient(imp, portrait ? w*0.22 : w*0.24, portrait ? -h*0.3 : 0, portrait ? w*0.44 : w*0.3); }
+    const say = info ? (info.text.split(/(?<=\.)\s/).slice(0,2).join(' ') || info.title) : 'Bu konuda kaynak bulamadım efendim.';
+    S.answer = say; speak(say); return;
+  }
+  let urls = [];
+  try { urls = await commonsImages((info && (info.en || info.title)) || q, 4); } catch(e){}
+  if (!urls.length && info && info.img) urls = [info.img];
+  if (!urls.length){ S.answer = 'Görsel bulamadım efendim.'; speak(S.answer); return; }
+  const cols = portrait ? 2 : 4, cw = portrait ? w*0.46 : w*0.22;
+  urls.forEach((u,i)=>{ const p = imagePanel(u); const c = i % cols, r = Math.floor(i/cols);
+    placeTransient(p, (c - (cols-1)/2) * (cw*1.04), portrait ? (h*0.1 - r*cw*1.04) : 0, cw); });
+  S.answer = `${(info && info.title) || q} için ${urls.length} görsel buldum efendim. Çimdikle tut, iki elle büyüt.`; speak(S.answer);
 }
 
-// ---------------- voice out ----------------
+// ============ CAMERA / ORIENTATION ============
+const zee = new THREE.Vector3(0,0,1), eul = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
+let ori = null;
+addEventListener('deviceorientation', e => { if (e.alpha != null) ori = e; });
+const screenAngle = () => (((screen.orientation && screen.orientation.angle) || window.orientation || 0) * Math.PI/180);
+function updateCamera(){
+  if (MODE === 'room' && ori){ const d = Math.PI/180; eul.set(ori.beta*d, ori.alpha*d, -ori.gamma*d, 'YXZ'); camera.quaternion.setFromEuler(eul); camera.quaternion.multiply(q1); camera.quaternion.multiply(q0.setFromAxisAngle(zee, -screenAngle())); }
+  else camera.quaternion.identity();
+}
+function recenter(){ updateCamera(); if (MODE === 'desk'){ hud.rotation.set(0,0,0); return; } const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); hud.rotation.set(0, Math.atan2(-f.x, -f.z), 0); }
+let stream = null;
+async function openCamera(){
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  const v = $('cam');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false });
+    v.srcObject = stream; await v.play().catch(()=>{});
+  } catch(e){ return false; }
+  v.classList.toggle('mirror', MODE === 'desk'); return true;
+}
+async function switchMode(m){
+  MODE = m; $('bMode').textContent = MODE === 'desk' ? '📷 MASA' : '📷 ODA';
+  if (MODE === 'room'){ try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){} }
+  await openCamera(); setTimeout(recenter, 400);
+  S.you = ''; S.answer = MODE === 'desk' ? 'Masa modu. Telefonu dik koyun, ellerinizi kaldırın efendim.' : 'Oda modu. Telefonu çevirdikçe paneller odada yerinde kalır efendim.'; speak(S.answer);
+}
+$('bMode').onclick = () => switchMode(MODE === 'desk' ? 'room' : 'desk');
+$('bReset').onclick = () => { recenter(); resetLayout(); };
+
+// ============ SOUND FX ============
+let actx = null;
+function audioUnlock(){ try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){} }
+function tone(f0, f1, dur, type='sine', vol=0.07, delay=0){
+  if (!actx) return; const t0 = actx.currentTime + delay; const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(30,f1), t0+dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+function whoosh(dur=0.35, vol=0.05, delay=0){
+  if (!actx) return; const t0 = actx.currentTime + delay, n = Math.floor(actx.sampleRate*dur);
+  const b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
+  const src = actx.createBufferSource(); src.buffer = b; const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2;
+  f.frequency.setValueAtTime(400, t0); f.frequency.exponentialRampToValueAtTime(3000, t0+dur);
+  const g = actx.createGain(); g.gain.value = vol; src.connect(f).connect(g).connect(actx.destination); src.start(t0);
+}
+const SFX = {
+  hover: () => tone(2200, 2600, 0.035, 'sine', 0.025),
+  tap:   () => { tone(880, 880, 0.05, 'square', 0.03); tone(1320, 1320, 0.07, 'square', 0.03, 0.05); },
+  grab:  () => { tone(300, 600, 0.14, 'sawtooth', 0.025); whoosh(0.18, 0.035); },
+  drop:  () => tone(600, 300, 0.12, 'triangle', 0.045),
+  scale: () => tone(500, 900, 0.08, 'sine', 0.03),
+  open:  () => { whoosh(0.4, 0.05); tone(400, 1600, 0.3, 'sine', 0.045); },
+  boot:  () => { tone(110, 880, 1.1, 'sawtooth', 0.022); whoosh(0.9, 0.045, 0.2); tone(1760, 1760, 0.14, 'sine', 0.05, 1.2); tone(2640, 2640, 0.18, 'sine', 0.05, 1.35); },
+  listen:() => tone(660, 990, 0.12, 'sine', 0.05),
+  answer:() => tone(990, 660, 0.12, 'sine', 0.045)
+};
+
+// ============ PARTICLES + BOOT ============
+(() => { const g = new THREE.BufferGeometry(), N = 420, pos = new Float32Array(N*3);
+  for (let i=0;i<N;i++){ pos[i*3]=(Math.random()-.5)*6; pos[i*3+1]=(Math.random()-.5)*5; pos[i*3+2]=-1.2-Math.random()*3.5; }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(g, new THREE.PointsMaterial({ color:0x5ff2ff, size:0.014, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false }));
+  pts.name = 'dust'; hud.add(pts); })();
+let bootAt = -1;
+function startBoot(){ bootAt = performance.now(); [pTop,pDialog,pProj,pNotes].forEach((p,i)=>{ p.bootDelay = [0,0.25,0.5,0.7][i]; }); SFX.boot(); }
+const easeOutBack = x => { const c1 = 1.70158, c3 = c1+1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
+function bootFactor(p, t){
+  if (bootAt < 0) return 0.001;
+  const start = Math.max(bootAt, p.born);
+  const k = Math.min(1, Math.max(0, ((t - start)/1000 - (p.bootDelay||0)) / 0.5));
+  p.mesh.material.opacity = k < 1 ? (Math.random() < 0.3 ? 0.35 : 1) * Math.min(1, k*1.6) : 1;
+  return k <= 0 ? 0.001 : easeOutBack(k);
+}
+
+// ============ HANDS ============
+const hcv = $('hands'), hctx = hcv.getContext('2d');
+function sizeHands(){ const d = Math.min(devicePixelRatio, 2); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
+const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+function drawHand(P, state){
+  const c = state === 'idle' ? HOLO : AMBER;
+  hctx.save(); hctx.shadowColor = c; hctx.shadowBlur = 14; hctx.strokeStyle = c; hctx.globalAlpha = .85; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
+  hctx.beginPath(); BONES.forEach(([a,b])=>{ hctx.moveTo(P[a][0],P[a][1]); hctx.lineTo(P[b][0],P[b][1]); }); hctx.stroke();
+  hctx.globalAlpha = 1; hctx.fillStyle = '#e8fdff';
+  P.forEach((q,i)=>{ hctx.beginPath(); hctx.arc(q[0],q[1],[4,8,12,16,20].includes(i)?5:3,0,6.283); hctx.fill(); });
+  hctx.restore();
+}
+function drawCursor(x, y, state){
+  hctx.save(); const c = state === 'idle' ? HOLO : AMBER; hctx.shadowColor = c; hctx.shadowBlur = 18; hctx.strokeStyle = c; hctx.lineWidth = 3;
+  hctx.beginPath(); hctx.arc(x, y, state === 'idle' ? 18 : 11, 0, 6.283); hctx.stroke();
+  hctx.fillStyle = c; hctx.beginPath(); hctx.arc(x, y, 4, 0, 6.283); hctx.fill(); hctx.restore();
+}
+let handsOn = false, lastVT = -1;
+const slots = [];
+const ray = new THREE.Raycaster(), v2 = new THREE.Vector2(), invQ = new THREE.Quaternion();
+function pick(sx, sy){
+  v2.set(sx/innerWidth*2-1, -(sy/innerHeight)*2+1); ray.setFromCamera(v2, camera);
+  const hits = ray.intersectObjects(panels.map(p=>p.mesh)); if (!hits.length) return null;
+  return { p: hits[0].object.userData.panel, uv: hits[0].uv };
+}
+function screenToPlane(sx, sy, z){
+  v2.set(sx/innerWidth*2-1, -(sy/innerHeight)*2+1); ray.setFromCamera(v2, camera);
+  invQ.copy(hud.quaternion).invert();
+  const o = ray.ray.origin.clone().applyQuaternion(invQ), d = ray.ray.direction.clone().applyQuaternion(invQ);
+  if (Math.abs(d.z) < 1e-4) return null; const t = (z - o.z) / d.z; if (t < 0) return null;
+  return o.add(d.multiplyScalar(t));
+}
+let hoverP = null;
+function setHover(p, uv){
+  if (hoverP !== p){ if (hoverP){ hoverP.hover = false; if (hoverP.rows){ hoverP.hoverRow = -1; hoverP.redraw(); } } hoverP = p; if (p){ p.hover = true; SFX.hover(); } }
+  if (p && p.rows && uv){ const r = rowAt(p, uv); if (r !== p.hoverRow){ p.hoverRow = r; p.redraw(); } }
+}
+async function toggleHands(){
+  if (handsOn){ handsOn = false; hctx.clearRect(0,0,innerWidth,innerHeight); setHover(null); $('bHand').classList.remove('on'); $('bHand').textContent = '✋ EL'; return; }
+  if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
+  $('bHand').textContent = '✋ YÜKLENİYOR…';
+  try { await window.HJHands.load(); handsOn = true; $('bHand').classList.add('on'); $('bHand').textContent = '✋ EL: AÇIK'; }
+  catch(e){ $('bHand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim: ' + ((e && e.message) || e); pDialog.redraw(); }
+}
+$('bHand').onclick = toggleHands;
+
+let scaleOp = null;
+function handTick(t){
+  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT) return; lastVT = v.currentTime;
+  let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
+  hctx.clearRect(0, 0, innerWidth, innerHeight);
+  const W = innerWidth, H = innerHeight, va = v.videoWidth / v.videoHeight;
+  const sc = Math.max(W / v.videoWidth, H / v.videoHeight), ox = (W - v.videoWidth*sc)/2, oy = (H - v.videoHeight*sc)/2;
+  const mirror = MODE === 'desk';
+  const map = q => [ ox + (mirror ? 1-q.x : q.x)*v.videoWidth*sc, oy + q.y*v.videoHeight*sc ];
+  const found = ((r && r.landmarks) || []).map(lm => {
+    const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
+    const size = d(lm[0], lm[9]) || 0.1; const P = lm.map(map);
+    return { P, pinchR: d(lm[4], lm[8]) / size, x: (P[4][0]+P[8][0])/2, y: (P[4][1]+P[8][1])/2 };
+  });
+  const used = new Set();
+  slots.forEach(s => { let best = -1, bd = 1e9; found.forEach((f,i)=>{ if (used.has(i)) return; const dd = Math.hypot(f.x-s.x, f.y-s.y); if (dd < bd){ bd = dd; best = i; } });
+    if (best >= 0 && bd < 280){ used.add(best); s.f = found[best]; s.seen = t; } else s.f = null; });
+  found.forEach((f,i)=>{ if (!used.has(i)) slots.push({ x:f.x, y:f.y, f, seen:t, pinch:false }); });
+  for (let i = slots.length-1; i >= 0; i--){ const s = slots[i]; if (!s.f && t - s.seen > 350){ if (s.grab) SFX.drop(); slots.splice(i,1); } }
+
+  let anyHover = null, anyUV = null;
+  slots.forEach(s => {
+    if (!s.f) return; const f = s.f;
+    s.x = s.x*0.45 + f.x*0.55; s.y = s.y*0.45 + f.y*0.55;
+    const was = s.pinch; s.pinch = was ? f.pinchR < 0.5 : f.pinchR < 0.32;
+    if (s.pinch && !was) s.start = { t, x:s.x, y:s.y, pk: pick(s.x, s.y) };
+    if (s.pinch && s.start){
+      const moved = Math.hypot(s.x - s.start.x, s.y - s.start.y);
+      if (!s.grab && s.start.pk && (moved > 22 || t - s.start.t > 380)){
+        const p = s.start.pk.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
+        if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; SFX.grab(); }
+      }
+      if (s.grab && !scaleOp){
+        const p = s.grab.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
+        if (hp){ p.mesh.position.x = hp.x + s.grab.ox; p.mesh.position.y = hp.y + s.grab.oy; p.baseY = p.mesh.position.y; }
+      }
+    }
+    if (!s.pinch && was){
+      if (!s.grab && s.start && s.start.pk && t - s.start.t < 480 && Math.hypot(s.x - s.start.x, s.y - s.start.y) < 26) activate(s.start.pk.p, s.start.pk.uv);
+      else if (s.grab) SFX.drop();
+      s.grab = null; s.start = null;
+    }
+    const state = s.grab ? 'grab' : s.pinch ? 'pinch' : 'idle';
+    drawHand(f.P, state); drawCursor(s.x, s.y, state);
+    if (s.grab) anyHover = s.grab.p; else if (!anyHover){ const pk = pick(s.x, s.y); if (pk){ anyHover = pk.p; anyUV = pk.uv; } }
+  });
+
+  const pin = slots.filter(s => s.f && s.pinch);
+  if (pin.length === 2){
+    const cand = s => (s.grab && s.grab.p) || (s.start && s.start.pk && s.start.pk.p) || null;
+    const target = (scaleOp && scaleOp.p) || cand(pin[0]) || cand(pin[1]);
+    const dist = Math.hypot(pin[0].x - pin[1].x, pin[0].y - pin[1].y);
+    if (target){
+      if (!scaleOp){ scaleOp = { p: target, d0: Math.max(40, dist), u0: target.user, tick: 0 }; target.moved = true; SFX.scale(); }
+      target.user = Math.max(0.3, Math.min(4, scaleOp.u0 * dist / scaleOp.d0));
+      const hp = screenToPlane((pin[0].x + pin[1].x)/2, (pin[0].y + pin[1].y)/2, target.mesh.position.z);
+      if (hp){ target.mesh.position.x = hp.x; target.mesh.position.y = hp.y; target.baseY = hp.y; }
+      if (t - scaleOp.tick > 140){ scaleOp.tick = t; tone(400 + target.user*180, 400 + target.user*180, 0.03, 'sine', 0.015); }
+      hctx.save(); hctx.strokeStyle = AMBER; hctx.shadowColor = AMBER; hctx.shadowBlur = 12; hctx.setLineDash([8,8]); hctx.lineWidth = 2;
+      hctx.beginPath(); hctx.moveTo(pin[0].x, pin[0].y); hctx.lineTo(pin[1].x, pin[1].y); hctx.stroke(); hctx.restore();
+      pin.forEach(s => { s.start = null; s.grab = null; });
+      anyHover = target;
+    }
+  } else if (scaleOp){ scaleOp = null; SFX.drop(); }
+  setHover(anyHover, anyUV);
+}
+function activate(p, uv){ p.pop = 1; SFX.tap(); if (p.onTap) p.onTap.call(p, uv || { x:.5, y:.5 }); else if (p === pDialog) startListen('once'); }
+$('gl').addEventListener('pointerup', e => { const pk = pick(e.clientX, e.clientY); if (pk) activate(pk.p, pk.uv); });
+
+// ============ LOOP ============
+let last = performance.now();
+function loop(t){
+  const dt = Math.min(.05, (t-last)/1000); last = t;
+  if (handsOn) handTick(t);
+  panels.forEach(p => {
+    const held = slots.some(s => s.grab && s.grab.p === p) || (scaleOp && scaleOp.p === p);
+    if (!held && p.baseY != null) p.mesh.position.y = p.baseY + Math.sin(t*0.0011 + (p.phase || (p.phase = Math.random()*6)))*0.008;
+    p.pop = Math.max(0, p.pop - dt*3);
+    const s = p.fit * p.user * (1 + 0.06*p.pop + (p.hover ? 0.03 : 0)) * bootFactor(p, t);
+    p.mesh.scale.set(s, s, s);
+  });
+  const dust = hud.getObjectByName('dust'); if (dust) dust.rotation.z += dt*0.01;
+  updateCamera(); renderer.render(scene, camera); requestAnimationFrame(loop);
+}
+
+// ============ VOICE OUT ============
 let trVoice = null;
-function pickVoice(){ const vs = speechSynthesis.getVoices(); trVoice = vs.find(v=>/^tr/i.test(v.lang) && /enhanced|premium/i.test(v.name)) || vs.find(v=>/^tr/i.test(v.lang)) || null; }
+function pickVoice(){ const vs = speechSynthesis.getVoices(); trVoice = vs.find(v=>/^tr/i.test(v.lang) && /enhanced|premium|geliştirilmiş/i.test(v.name)) || vs.find(v=>/^tr/i.test(v.lang)) || null; }
 if ('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function speak(text){
-  if (!('speechSynthesis' in window)) { setTimeout(()=>{ S.mode='idle'; pDialog.redraw(); }, 3000); return; }
-  speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'tr-TR'; if (trVoice) u.voice = trVoice; u.rate = 1.02; u.pitch = 0.9;
-  u.onend = u.onerror = () => { if (S.mode==='speaking'){ S.mode='idle'; pDialog.redraw(); } };
+  if (!('speechSynthesis' in window)){ S.mode = 'idle'; pDialog.redraw(); return; }
+  pauseRec(); speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; if (trVoice) u.voice = trVoice; u.rate = 1.03; u.pitch = 0.9;
+  u.onend = u.onerror = () => { if (S.mode === 'speaking'){ S.mode = 'idle'; pDialog.redraw(); } resumeRec(); };
   S.mode = 'speaking'; pDialog.redraw(); speechSynthesis.speak(u);
 }
 
-// ---------------- voice in ----------------
+// ============ VOICE IN ============
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, finalText = '';
-function toggleListen(){
-  if (S.mode === 'listening'){ rec && rec.stop(); return; }
-  if (!SR){ S.answer = 'Bu tarayıcıda ses tanıma yok efendim. Alttaki kutuya yazabilirsiniz.'; S.you=''; pDialog.redraw(); $('txt').focus(); return; }
-  try { speechSynthesis.cancel(); } catch(e){}
-  rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = false; finalText = '';
-  rec.onstart = () => { SFX.listen(); S.mode = 'listening'; S.you = '…'; $('mic').classList.add('on'); $('mic').textContent = 'DUR'; pDialog.redraw(); };
-  rec.onresult = e => { let txt=''; for (let i=0;i<e.results.length;i++) txt += e.results[i][0].transcript; S.you = txt; if (e.results[e.results.length-1].isFinal) finalText = txt; pDialog.redraw(); };
-  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin ya da yazın.'; } };
-  rec.onend = () => { $('mic').classList.remove('on'); $('mic').textContent = 'KONUŞ'; const q = (finalText || (S.you!=='…' ? S.you : '')).trim(); if (q) ask(q); else { S.mode='idle'; if (S.you==='…') S.you=''; pDialog.redraw(); } };
-  try { rec.start(); } catch(e){ S.mode='idle'; pDialog.redraw(); }
+let rec = null, paused = false, onceMode = null;
+const WAKE = /(jarvis|carvis|cervis|jarvi̇s|ceyvis|çarvis)/i;
+function startListen(kind){
+  if (!SR){ S.you=''; S.answer = 'Bu tarayıcıda ses tanıma yok efendim. Alttaki kutuya yazabilirsiniz.'; pDialog.redraw(); return; }
+  onceMode = kind || 'once'; S.mode = 'listening'; S.you = kind === 'note' ? 'Not: …' : '…'; SFX.listen(); pDialog.redraw();
+  if (!listenOn) beginRec(); else if (paused) resumeRec();
 }
-$('mic').onclick = toggleListen;
-$('txt').addEventListener('keydown', e => { if (e.key === 'Enter'){ const q = e.target.value.trim(); e.target.value=''; e.target.blur(); if (q) ask(q); } });
+function beginRec(){
+  if (!SR) return;
+  try { if (rec) rec.abort(); } catch(e){}
+  rec = new SR(); rec.lang = 'tr-TR'; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const txt = e.results[i][0].transcript.trim();
+      if (onceMode || WAKE.test(txt)){ S.you = (onceMode === 'note' ? 'Not: ' : '') + txt; pDialog.redraw(); }
+      if (e.results[i].isFinal) handleUtterance(txt);
+    }
+  };
+  rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){ listenOn = false; updateMic(); S.answer = 'Mikrofon izni yok efendim. Ayarlar → Safari → Mikrofon\'dan izin verin.'; pDialog.redraw(); } };
+  rec.onend = () => { if (listenOn && !paused){ try { rec.start(); } catch(e){ listenOn = false; updateMic(); S.you=''; S.answer = 'Dinleme durdu efendim. Tekrar başlatmak için DİNLE\'ye dokunun.'; pDialog.redraw(); } } };
+  try { rec.start(); listenOn = true; paused = false; } catch(e){ listenOn = false; }
+  updateMic();
+}
+function pauseRec(){ if (listenOn && rec && !paused){ paused = true; try { rec.stop(); } catch(e){} } }
+function resumeRec(){ if (listenOn && rec && paused){ paused = false; try { rec.start(); } catch(e){} } }
+function stopRec(){ listenOn = false; paused = false; onceMode = null; try { rec && rec.stop(); } catch(e){} if (S.mode === 'listening') S.mode = 'idle'; updateMic(); }
+function updateMic(){ $('mic').classList.toggle('on', listenOn); $('mic').textContent = listenOn ? 'DUR' : 'DİNLE'; pDialog.redraw(); }
+$('mic').onclick = () => { if (listenOn) stopRec(); else { beginRec(); S.you=''; S.answer = 'Dinliyorum efendim. “Jarvis” diye başlayın.'; SFX.listen(); pDialog.redraw(); } };
+function handleUtterance(raw){
+  let txt = raw.trim(); const m = txt.match(/^(.*?)(jarvis|carvis|cervis|ceyvis|çarvis)[,.!\s]*(.*)$/i);
+  if (onceMode === 'note'){ onceMode = null; S.mode = 'idle'; const t = m ? (m[3] || '') : txt; if (t) addNote(t); return; }
+  if (onceMode){ onceMode = null; S.mode = 'idle'; if (m) txt = m[3] || ''; if (txt) command(txt); return; }
+  if (!m) return; const rest = (m[3] || '').trim();
+  if (!rest){ S.you = 'Jarvis'; S.answer = 'Buyurun efendim?'; speak(S.answer); onceMode = 'once'; return; }
+  command(rest);
+}
+$('txt').addEventListener('keydown', e => { if (e.key === 'Enter'){ const q = e.target.value.trim(); e.target.value = ''; e.target.blur(); if (q) command(q); } });
 
-// ---------------- brain (Groq) ----------------
-const SYS = 'Sen J.A.R.V.I.S.\'sin: kullanıcının kişisel yapay zekâ asistanı. Odada holografik paneller olarak görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma, bilmediğini söyle. Kullanıcı bir şeyi aramanı, araştırmanı, göstermeni isterse ya da bir kişi, yer, hayvan, nesne veya kavram hakkında bilgi isterse, kısa cevabından sonra en sona ayrı bir satırda tam olarak [ARA: arama terimi] yaz. Arama terimi kısa ve Vikipedi başlığına uygun olsun. Ekranda araştırma ve görsel paneli açılacağını bil.';
+// ============ COMMANDS ============
+function addNote(t){ t = t.trim().replace(/^[:,\-\s]+/,''); if (!t) return; notes.unshift({ t, done:false }); saveNotes(); pNotes.redraw(); pNotes.pop = 1; SFX.tap(); S.you = 'Not: ' + t; S.answer = 'Not aldım efendim.'; speak(S.answer); }
+function term(t){
+  return t.replace(/['’][a-zçğıöşü]+/gi, '')
+    .replace(/(^|\s)(jarvis|bana|lütfen|bir|biraz|hakkında|bilgi|ver|getir|nedir|kimdir|neresidir|araştır|araştırır|mısın|misin|ara|bul|göster|gösterir|resim\S*|resmi\S*|görsel\S*|fotoğraf\S*|foto\S*)(?=\s|$)/gi, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function command(txt){
+  const low = txt.toLocaleLowerCase('tr');
+  S.you = txt; pDialog.redraw();
+  let m;
+  if ((m = low.match(/^(not al|not et|not yaz|hatırlat)[:,\s]*(.*)$/))){ addNote(txt.slice(txt.length - m[2].length)); return; }
+  if (/^notları (sil|temizle)/.test(low)){ notes = []; saveNotes(); pNotes.redraw(); S.answer = 'Notlar temizlendi efendim.'; speak(S.answer); return; }
+  if (/^(kapat|temizle|panelleri kapat|görselleri kapat)\b/.test(low)){ clearResearch(); S.answer = 'Temizlendi efendim.'; speak(S.answer); return; }
+  if (/^(düzen|düzenle|sıfırla|ortala)\b/.test(low)){ recenter(); resetLayout(); S.answer = 'Panelleri yerine aldım efendim.'; speak(S.answer); return; }
+  if (/(resim|resmi|görsel|fotoğraf|foto)/.test(low) && /(göster|bul|ara|getir)/.test(low)){ const q = term(txt); if (q){ doResearch(q, true); return; } }
+  if (/(araştır|(^|\s)ara(\s|$)|nedir|kimdir|neresidir|hakkında bilgi)/.test(low)){ const q = term(txt); if (q){ doResearch(q, false); return; } }
+  ask(txt);
+}
+
+// ============ BRAIN ============
+const SYS = `Sen J.A.R.V.I.S.'sin: ${USER}'nin kişisel yapay zekâ asistanı. ${USER} İstanbul'da yaşayan solo bir geliştirici ve girişimci; Flutter/iOS, Supabase ve Groq ile uygulamalar yapıyor ve yazılımla pasif gelir kurmaya odaklı. Projeleri: ${PROJECTS.map(p=>p.name+' ('+p.desc+')').join('; ')}. Holografik bir arayüzde görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; ona "efendim" de. Cevapların en fazla 3 kısa cümle, somut ve uygulanabilir olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma.`;
 const MODELS = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
 const clean = t => String(t || '').replace(/[*#_`]/g,'').trim();
-function msgs(q){ return [...history.slice(-8), { role:'user', content:q }]; }
-function sysNow(){ return SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.`; }
+const msgs = q => [...history.slice(-8), { role:'user', content:q }];
+const sysNow = () => SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.` + (weather ? ` İstanbul'da hava ${Math.round(weather.t)}°C, ${weather.txt}.` : '');
 async function viaGroq(key, q){
   const messages = [{ role:'system', content: sysNow() }, ...msgs(q)];
   for (const model of MODELS){
-    let r; try { r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body: JSON.stringify({ model, messages, temperature:0.7, max_tokens:400 }) }); }
-    catch(e){ throw { code:'net' }; }
-    if (r.ok){ const j = await r.json(); const t = clean(j.choices?.[0]?.message?.content); if (t) return t; continue; }
-    if (r.status === 401) throw { code:'badkey' };
-    if (r.status === 429) throw { code:'rate' };
-  }
-  throw { code:'nomodel' };
+    let r; try { r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key }, body: JSON.stringify({ model, messages, temperature:0.7, max_tokens:400 }) }); } catch(e){ throw { code:'net' }; }
+    if (r.ok){ const j = await r.json(); const t = clean(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content); if (t) return t; continue; }
+    if (r.status === 401) throw { code:'badkey' }; if (r.status === 429) throw { code:'rate' };
+  } throw { code:'nomodel' };
 }
 async function viaAnthropic(key, q){
   for (const model of ['claude-haiku-5-5','claude-sonnet-5-5']){
-    let r; try { r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' }, body: JSON.stringify({ model, max_tokens:400, system: sysNow(), messages: msgs(q) }) }); }
-    catch(e){ throw { code:'net' }; }
+    let r; try { r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' }, body: JSON.stringify({ model, max_tokens:400, system: sysNow(), messages: msgs(q) }) }); } catch(e){ throw { code:'net' }; }
     if (r.ok){ const j = await r.json(); const t = clean((j.content||[]).map(c=>c.text||'').join('')); if (t) return t; continue; }
-    if (r.status === 401) throw { code:'badkey' };
-    if (r.status === 429) throw { code:'rate' };
-  }
-  throw { code:'nomodel' };
+    if (r.status === 401) throw { code:'badkey' }; if (r.status === 429) throw { code:'rate' };
+  } throw { code:'nomodel' };
 }
-function puterText(res){
-  if (!res) return '';
-  if (typeof res === 'string') return res;
-  const c = res.message?.content ?? res.text ?? res;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.map(x => x.text || '').join('');
-  return String(res);
-}
+function puterText(res){ if (!res) return ''; if (typeof res === 'string') return res; const c = (res.message && res.message.content) != null ? res.message.content : (res.text != null ? res.text : res); if (typeof c === 'string') return c; if (Array.isArray(c)) return c.map(x => x.text || '').join(''); return String(res); }
 async function viaPuter(q){
   if (!window.puter) throw { code:'noputer' };
-  const signed = await puter.auth.isSignedIn().catch(()=>false);
-  if (!signed) throw { code:'nologin' };
+  const signed = await puter.auth.isSignedIn().catch(()=>false); if (!signed) throw { code:'nologin' };
   const messages = [{ role:'system', content: sysNow() }, ...msgs(q)];
-  for (const opt of [{ model:'claude-sonnet-4-5' }, { model:'claude-sonnet-4' }, {}]){
-    try { const t = clean(puterText(await puter.ai.chat(messages, opt))); if (t) return t; } catch(e){ /* try next model */ }
-  }
+  for (const opt of [{ model:'claude-sonnet-4-5' }, { model:'claude-sonnet-4' }, {}]){ try { const t = clean(puterText(await puter.ai.chat(messages, opt))); if (t) return t; } catch(e){} }
   throw { code:'puterfail' };
 }
-async function groq(q){
-  const key = store.get('groqKey');
-  if (key.startsWith('sk-ant')) return viaAnthropic(key, q);
-  if (key) return viaGroq(key, q);
-  return viaPuter(q);
-}
-async function puterLogin(stateEl){
-  if (!window.puter){ stateEl.textContent = 'Puter yüklenemedi, internet bağlantını kontrol et.'; return; }
-  try { await puter.auth.signIn(); stateEl.textContent = '✓ Claude bağlı (Puter).'; }
-  catch(e){ stateEl.textContent = 'Giriş tamamlanmadı. Açılır pencereye izin verip tekrar dene.'; }
-}
-$('puter0').onclick = () => puterLogin($('puterState0'));
-$('puter1').onclick = () => puterLogin($('puterState1'));
-setTimeout(async () => { try { if (window.puter && await puter.auth.isSignedIn()) { $('puterState0').textContent = '✓ Claude bağlı (Puter).'; $('puterState1').textContent = '✓ Claude bağlı (Puter).'; } } catch(e){} }, 1200);
+async function brain(q){ const key = store.get('groqKey'); if (key.startsWith('sk-ant')) return viaAnthropic(key, q); if (key) return viaGroq(key, q); return viaPuter(q); }
 async function ask(q){
   S.you = q; S.mode = 'thinking'; S.answer = '…'; pDialog.redraw(); pDialog.pop = 1;
   let a;
-  try { a = await groq(q); history.push({ role:'user', content:q }, { role:'assistant', content:a }); }
-  catch(e){
-    a = { nologin:'Beynimi bağlamak için AYAR\'dan ücretsiz Claude\'a bağlanın efendim.', noputer:'Bağlantı servisine ulaşamadım efendim.', puterfail:'Claude şu an cevap vermedi efendim, tekrar deneyin.', nokey:'Beynimi bağlamak için AYAR\'dan bağlanın efendim.', badkey:'API anahtarı geçersiz görünüyor efendim. AYAR\'dan kontrol edin.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Groq modellerine ulaşamadım efendim.' }[e.code] || 'Bir sorun oluştu efendim.';
-    if (['nokey','badkey','nologin'].includes(e.code)) setTimeout(()=>{ $('settings').hidden = false; }, 1500);
-  }
-  let q2 = null; const m = a.match(/\[ARA:\s*([^\]]+)\]/i);
-  if (m){ q2 = m[1].trim(); a = a.replace(m[0], '').trim() || 'Araştırıyorum efendim.'; }
+  try { a = await brain(q); history.push({ role:'user', content:q }, { role:'assistant', content:a }); }
+  catch(e){ a = { nologin:'Beynimi bağlamak için AYAR\'dan ücretsiz Claude\'a bağlanın efendim.', noputer:'Bağlantı servisine ulaşamadım efendim.', puterfail:'Claude şu an cevap vermedi efendim, tekrar deneyin.', badkey:'API anahtarı geçersiz efendim.', rate:'Biraz hızlı gittik efendim, birkaç saniye sonra tekrar deneyin.', net:'İnternete ulaşamıyorum efendim.', nomodel:'Modellere ulaşamadım efendim.' }[e && e.code] || 'Bir sorun oluştu efendim.'; }
   S.answer = a; SFX.answer(); speak(a);
-  if (q2) research(q2);
 }
 
-// ---------------- settings ----------------
-$('gear').onclick = () => { $('key1').value = store.get('groqKey'); $('settings').hidden = false; };
-$('close').onclick = () => { $('settings').hidden = true; };
-$('save').onclick = () => { store.set('groqKey', $('key1').value.trim()); $('settings').hidden = true; S.answer = 'Ayarlar kaydedildi. Beyin çevrimiçi, efendim.'; S.you=''; speak(S.answer); };
+// ============ WEATHER ============
+const WMO = { 0:'açık', 1:'az bulutlu', 2:'parçalı bulutlu', 3:'kapalı', 45:'sisli', 48:'sisli', 51:'çisenti', 53:'çisenti', 55:'çisenti', 61:'hafif yağmurlu', 63:'yağmurlu', 65:'şiddetli yağmur', 71:'hafif kar', 73:'karlı', 75:'yoğun kar', 80:'sağanak', 81:'sağanak', 82:'şiddetli sağanak', 95:'gök gürültülü', 96:'dolu', 99:'dolu' };
+async function loadWeather(){
+  try { const j = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.97&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FIstanbul&forecast_days=1')).json();
+    weather = { t:j.current.temperature_2m, txt: WMO[j.current.weather_code] || '—', max:j.daily.temperature_2m_max[0], min:j.daily.temperature_2m_min[0] }; pTop.redraw(); } catch(e){}
+}
+loadWeather(); setInterval(loadWeather, 15*60*1000); setInterval(() => pTop.redraw(), 15000);
 
-// ---------------- start ----------------
-$('go').onclick = async () => {
-  const k = $('key0').value.trim(); if (k) store.set('groqKey', k);
-  const errEl = $('startErr'); errEl.hidden = true;
-  // motion permission (iOS) — must be inside the tap
-  try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){}
-  // unlock speech on iOS
+// ============ SETTINGS ============
+async function puterLogin(el){ if (!window.puter){ el.textContent = 'Puter yüklenemedi.'; return; } try { await puter.auth.signIn(); el.textContent = '✓ Claude bağlı (Puter).'; } catch(e){ el.textContent = 'Giriş tamamlanmadı, tekrar dene.'; } }
+$('puter0').onclick = () => puterLogin($('puterState0')); $('puter1').onclick = () => puterLogin($('puterState1'));
+setTimeout(async () => { try { if (window.puter && await puter.auth.isSignedIn()){ $('puterState0').textContent = $('puterState1').textContent = '✓ Claude bağlı (Puter).'; } } catch(e){} }, 1200);
+$('bGear').onclick = () => { $('key1').value = store.get('groqKey'); $('settings').hidden = false; };
+$('close').onclick = () => { $('settings').hidden = true; };
+$('save').onclick = () => { store.set('groqKey', $('key1').value.trim()); $('settings').hidden = true; S.you=''; S.answer = 'Ayarlar kaydedildi efendim.'; speak(S.answer); };
+
+// ============ START ============
+function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); sizeHands(); layout(); }
+addEventListener('resize', resize);
+async function go(mode){
+  MODE = mode; const k = $('key0').value.trim(); if (k) store.set('groqKey', k);
+  if (mode === 'room'){ try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){} }
   try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch(e){}
   audioUnlock();
-  // camera
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 } }, audio:false });
-    $('cam').srcObject = stream; await $('cam').play().catch(()=>{});
-  } catch(e){
-    errEl.textContent = 'Kamera açılamadı. Safari\'de açtığından ve kamera iznini verdiğinden emin ol. Kamera olmadan siyah arka planla devam ediyorum.'; errEl.hidden = false;
-    await new Promise(r=>setTimeout(r, 1800));
-  }
-  $('start').hidden = true; ['recenter','gear','bar','hand','vrb'].forEach(id=>$(id).hidden=false);
-  requestAnimationFrame(loop);
-  setTimeout(()=>{ recenter(); startBoot(); }, 400);
-  setTimeout(()=>{ S.answer = 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?'; speak(S.answer); }, 2200);
-};
+  beginRec();
+  const ok = await openCamera();
+  if (!ok){ $('startErr').textContent = 'Kamera açılamadı. Safari\'de aç ve kamera izni ver.'; $('startErr').hidden = false; await new Promise(r=>setTimeout(r,1500)); }
+  $('bMode').textContent = MODE === 'desk' ? '📷 MASA' : '📷 ODA';
+  $('start').hidden = true; ['bMode','bHand','bGear','bReset','bar'].forEach(id => $(id).hidden = false);
+  resize(); requestAnimationFrame(loop);
+  setTimeout(() => { recenter(); startBoot(); }, 300);
+  setTimeout(() => { S.answer = `Tüm sistemler çevrimiçi. Hoş geldin ${USER}. Bugün ne inşa ediyoruz, efendim?`; speak(S.answer); }, 1900);
+  toggleHands();
+}
+$('goDesk').onclick = () => go('desk');
+$('goRoom').onclick = () => go('room');
 })();
 </script>
 </body>
