@@ -21,6 +21,10 @@ video.mirror{transform:scaleX(-1)}
 #bHand{top:calc(50px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
 #bGear{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
 #bReset{top:calc(50px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+#bStage{top:calc(90px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+body.stage video{visibility:hidden}body.stage #fx{background:none}
+body.stage .btn,body.stage #bar{opacity:0;pointer-events:none}
+body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 #bar{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;gap:8px;align-items:center;justify-content:center;padding:10px max(12px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
 #mic{width:64px;height:64px;border-radius:50%;border:2px solid var(--holo);background:var(--glass);color:var(--holo);font:700 11px ui-monospace,Menlo,monospace;letter-spacing:.06em;flex:none}
 #mic.on{border-color:var(--amber);color:var(--amber);box-shadow:0 0 24px rgba(255,181,71,.6)}
@@ -49,6 +53,7 @@ video.mirror{transform:scaleX(-1)}
 <button class="btn" id="bHand" hidden>✋ EL</button>
 <button class="btn" id="bGear" hidden>⚙ AYAR</button>
 <button class="btn" id="bReset" hidden>⟲ DÜZEN</button>
+<button class="btn" id="bStage" hidden>📺 SAHNE</button>
 <div id="bar" hidden>
   <input id="txt" type="text" placeholder="Yaz ya da “Jarvis, …” de" autocomplete="off" enterkeyhint="send">
   <button id="mic">DİNLE</button>
@@ -134,7 +139,7 @@ let listenOn = false;
 
 // ============ THREE ============
 const renderer = new THREE.WebGLRenderer({ canvas:$('gl'), alpha:true, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.05, 50);
 const hud = new THREE.Group(); scene.add(hud);
@@ -310,7 +315,9 @@ async function doResearch(q, withImages){
   const { w, h } = viewSize(); const portrait = camera.aspect < 1;
   S.you = (withImages ? 'Görsel: ' : 'Araştır: ') + q; S.mode = 'thinking'; S.answer = 'Arıyorum efendim…'; pDialog.redraw();
   let info = null;
-  try { info = await wikiFind(q, 'tr') || await wikiFind(q, 'en'); } catch(e){}
+  let err = null;
+  try { info = await wikiFind(q, 'tr'); if (!info){ S.answer = 'Türkçe kaynak yok, İngilizce bakıyorum…'; pDialog.redraw(); info = await wikiFind(q, 'en'); } } catch(e){ err = e; }
+  if (err && !info){ S.answer = 'Vikipedi\'ye ulaşamadım efendim (' + (err.message || 'ağ hatası') + ').'; speak(S.answer); return; }
   if (!withImages){
     const ip = infoPanel(info || { title:q, text:'Bu konuda kaynak bulamadım efendim.' });
     placeTransient(ip, portrait ? 0 : -w*0.14, portrait ? h*0.02 : 0, portrait ? w*0.9 : w*0.4);
@@ -319,6 +326,7 @@ async function doResearch(q, withImages){
     S.answer = say; speak(say); return;
   }
   let urls = [];
+  S.answer = 'Görseller aranıyor…'; pDialog.redraw();
   try { urls = await commonsImages((info && (info.en || info.title)) || q, 4); } catch(e){}
   if (!urls.length && info && info.img) urls = [info.img];
   if (!urls.length){ S.answer = 'Görsel bulamadım efendim.'; speak(S.answer); return; }
@@ -343,7 +351,7 @@ async function openCamera(){
   if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
   const v = $('cam');
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false });
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:960 }, height:{ ideal:540 }, frameRate:{ ideal:30, max:30 } }, audio:false });
     v.srcObject = stream; await v.play().catch(()=>{});
   } catch(e){ return false; }
   v.classList.toggle('mirror', MODE === 'desk'); return true;
@@ -356,6 +364,14 @@ async function switchMode(m){
 }
 $('bMode').onclick = () => switchMode(MODE === 'desk' ? 'room' : 'desk');
 $('bReset').onclick = () => { recenter(); resetLayout(); };
+let stage = false, peekT = 0;
+function setStage(on){
+  stage = on; document.body.classList.toggle('stage', on); $('bStage').classList.toggle('on', on);
+  try { if (on && navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
+  S.you = ''; S.answer = on ? 'Sahne modu. Kamera görüntüsü gizlendi, sadece hologramlar yansıyor efendim. Ekrana dokunursanız butonlar görünür.' : 'Sahne modu kapandı efendim.'; speak(S.answer);
+}
+$('bStage').onclick = () => setStage(!stage);
+document.addEventListener('pointerdown', () => { if (!stage) return; document.body.classList.add('peek'); clearTimeout(peekT); peekT = setTimeout(() => document.body.classList.remove('peek'), 4000); }, true);
 
 // ============ SOUND FX ============
 let actx = null;
@@ -386,7 +402,7 @@ const SFX = {
 };
 
 // ============ PARTICLES + BOOT ============
-(() => { const g = new THREE.BufferGeometry(), N = 420, pos = new Float32Array(N*3);
+(() => { const g = new THREE.BufferGeometry(), N = 220, pos = new Float32Array(N*3);
   for (let i=0;i<N;i++){ pos[i*3]=(Math.random()-.5)*6; pos[i*3+1]=(Math.random()-.5)*5; pos[i*3+2]=-1.2-Math.random()*3.5; }
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const pts = new THREE.Points(g, new THREE.PointsMaterial({ color:0x5ff2ff, size:0.014, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false }));
@@ -404,11 +420,11 @@ function bootFactor(p, t){
 
 // ============ HANDS ============
 const hcv = $('hands'), hctx = hcv.getContext('2d');
-function sizeHands(){ const d = Math.min(devicePixelRatio, 2); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
+function sizeHands(){ const d = Math.min(devicePixelRatio, 1.5); hcv.width = innerWidth*d; hcv.height = innerHeight*d; hctx.setTransform(d,0,0,d,0,0); }
 const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function drawHand(P, state){
   const c = state === 'idle' ? HOLO : AMBER;
-  hctx.save(); hctx.shadowColor = c; hctx.shadowBlur = 14; hctx.strokeStyle = c; hctx.globalAlpha = .85; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
+  hctx.save(); hctx.shadowColor = c; hctx.shadowBlur = stage ? 26 : 14; if (stage) hctx.lineWidth = 4; hctx.strokeStyle = c; hctx.globalAlpha = .85; hctx.lineWidth = 2.5; hctx.lineCap = 'round';
   hctx.beginPath(); BONES.forEach(([a,b])=>{ hctx.moveTo(P[a][0],P[a][1]); hctx.lineTo(P[b][0],P[b][1]); }); hctx.stroke();
   hctx.globalAlpha = 1; hctx.fillStyle = '#e8fdff';
   P.forEach((q,i)=>{ hctx.beginPath(); hctx.arc(q[0],q[1],[4,8,12,16,20].includes(i)?5:3,0,6.283); hctx.fill(); });
@@ -419,7 +435,7 @@ function drawCursor(x, y, state){
   hctx.beginPath(); hctx.arc(x, y, state === 'idle' ? 18 : 11, 0, 6.283); hctx.stroke();
   hctx.fillStyle = c; hctx.beginPath(); hctx.arc(x, y, 4, 0, 6.283); hctx.fill(); hctx.restore();
 }
-let handsOn = false, lastVT = -1;
+let handsOn = false, lastVT = -1, lastDet = 0, detBusy = false;
 const slots = [];
 const ray = new THREE.Raycaster(), v2 = new THREE.Vector2(), invQ = new THREE.Quaternion();
 function pick(sx, sy){
@@ -436,7 +452,7 @@ function screenToPlane(sx, sy, z){
 }
 let hoverP = null;
 function setHover(p, uv){
-  if (hoverP !== p){ if (hoverP){ hoverP.hover = false; if (hoverP.rows){ hoverP.hoverRow = -1; hoverP.redraw(); } } hoverP = p; if (p){ p.hover = true; SFX.hover(); } }
+  if (hoverP !== p){ if (hoverP){ hoverP.hover = false; if (hoverP.rows){ hoverP.hoverRow = -1; hoverP.redraw(); } } hoverP = p; if (p){ p.hover = true; if (performance.now() - (setHover.lt||0) > 350){ setHover.lt = performance.now(); SFX.hover(); } } }
   if (p && p.rows && uv){ const r = rowAt(p, uv); if (r !== p.hoverRow){ p.hoverRow = r; p.redraw(); } }
 }
 async function toggleHands(){
@@ -448,9 +464,9 @@ async function toggleHands(){
 }
 $('bHand').onclick = toggleHands;
 
-let scaleOp = null;
+let scaleOp = null, lastActivate = 0;
 function handTick(t){
-  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT) return; lastVT = v.currentTime;
+  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT || t - lastDet < 55) return; lastVT = v.currentTime; lastDet = t;
   let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
   hctx.clearRect(0, 0, innerWidth, innerHeight);
   const W = innerWidth, H = innerHeight, va = v.videoWidth / v.videoHeight;
@@ -460,23 +476,29 @@ function handTick(t){
   const found = ((r && r.landmarks) || []).map(lm => {
     const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
     const size = d(lm[0], lm[9]) || 0.1; const P = lm.map(map);
-    return { P, pinchR: d(lm[4], lm[8]) / size, x: (P[4][0]+P[8][0])/2, y: (P[4][1]+P[8][1])/2 };
+    // pinch ratio uses 3D distance when available (more robust to rotation)
+    const pz = Math.hypot((lm[4].x-lm[8].x)*va, lm[4].y-lm[8].y, ((lm[4].z||0)-(lm[8].z||0))*0.8);
+    return { P, size, pinchR: pz / size, x: (P[4][0]+P[8][0])/2, y: (P[4][1]+P[8][1])/2 };
   });
   const used = new Set();
   slots.forEach(s => { let best = -1, bd = 1e9; found.forEach((f,i)=>{ if (used.has(i)) return; const dd = Math.hypot(f.x-s.x, f.y-s.y); if (dd < bd){ bd = dd; best = i; } });
     if (best >= 0 && bd < 280){ used.add(best); s.f = found[best]; s.seen = t; } else s.f = null; });
-  found.forEach((f,i)=>{ if (!used.has(i)) slots.push({ x:f.x, y:f.y, f, seen:t, pinch:false }); });
+  found.forEach((f,i)=>{ if (!used.has(i) && f.size > 0.07) slots.push({ x:f.x, y:f.y, f, seen:t, pinch:false, pf:0, vx:0, vy:0 }); });
   for (let i = slots.length-1; i >= 0; i--){ const s = slots[i]; if (!s.f && t - s.seen > 350){ if (s.grab) SFX.drop(); slots.splice(i,1); } }
 
   let anyHover = null, anyUV = null;
   slots.forEach(s => {
     if (!s.f) return; const f = s.f;
-    s.x = s.x*0.45 + f.x*0.55; s.y = s.y*0.45 + f.y*0.55;
-    const was = s.pinch; s.pinch = was ? f.pinchR < 0.5 : f.pinchR < 0.32;
+    const nx = s.x*0.5 + f.x*0.5, ny = s.y*0.5 + f.y*0.5;
+    const spd = Math.hypot(nx - s.x, ny - s.y) / Math.max(0.016, (t - (s.lt || t - 55))/1000); s.lt = t;
+    s.x = nx; s.y = ny;
+    const was = s.pinch;
+    if (!was){ s.pf = f.pinchR < 0.26 ? s.pf + 1 : 0; s.pinch = s.pf >= 2 && spd < 1100; }   // deliberate, steady pinch
+    else s.pinch = f.pinchR < 0.45;
     if (s.pinch && !was) s.start = { t, x:s.x, y:s.y, pk: pick(s.x, s.y) };
     if (s.pinch && s.start){
       const moved = Math.hypot(s.x - s.start.x, s.y - s.start.y);
-      if (!s.grab && s.start.pk && (moved > 22 || t - s.start.t > 380)){
+      if (!s.grab && s.start.pk && (moved > 34 || t - s.start.t > 480)){
         const p = s.start.pk.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
         if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; SFX.grab(); }
       }
@@ -486,7 +508,7 @@ function handTick(t){
       }
     }
     if (!s.pinch && was){
-      if (!s.grab && s.start && s.start.pk && t - s.start.t < 480 && Math.hypot(s.x - s.start.x, s.y - s.start.y) < 26) activate(s.start.pk.p, s.start.pk.uv);
+      if (!s.grab && s.start && s.start.pk && t - s.start.t > 90 && t - s.start.t < 700 && Math.hypot(s.x - s.start.x, s.y - s.start.y) < 30 && t - lastActivate > 700){ lastActivate = t; activate(s.start.pk.p, s.start.pk.uv); }
       else if (s.grab) SFX.drop();
       s.grab = null; s.start = null;
     }
@@ -599,9 +621,11 @@ function command(txt){
   if ((m = low.match(/^(not al|not et|not yaz|hatırlat)[:,\s]*(.*)$/))){ addNote(txt.slice(txt.length - m[2].length)); return; }
   if (/^notları (sil|temizle)/.test(low)){ notes = []; saveNotes(); pNotes.redraw(); S.answer = 'Notlar temizlendi efendim.'; speak(S.answer); return; }
   if (/^(kapat|temizle|panelleri kapat|görselleri kapat)\b/.test(low)){ clearResearch(); S.answer = 'Temizlendi efendim.'; speak(S.answer); return; }
+  if (/sahne modu(nu)? (aç|başlat)|sahneye geç/.test(low)){ setStage(true); return; }
+  if (/sahne modu(nu)? kapat|sahneden çık/.test(low)){ setStage(false); return; }
   if (/^(düzen|düzenle|sıfırla|ortala)\b/.test(low)){ recenter(); resetLayout(); S.answer = 'Panelleri yerine aldım efendim.'; speak(S.answer); return; }
   if (/(resim|resmi|görsel|fotoğraf|foto)/.test(low) && /(göster|bul|ara|getir)/.test(low)){ const q = term(txt); if (q){ doResearch(q, true); return; } }
-  if (/(araştır|(^|\s)ara(\s|$)|nedir|kimdir|neresidir|hakkında bilgi)/.test(low)){ const q = term(txt); if (q){ doResearch(q, false); return; } }
+  if (/(araştır|(^|\s)ara(\s|$)|nedir|kimdir|neresidir|nerede|hakkında|bilgi ver|anlat)/.test(low)){ const q = term(txt.replace(/\b(anlat|nerede)\b/gi,'')); if (q){ doResearch(q, false); return; } }
   ask(txt);
 }
 
@@ -671,7 +695,7 @@ async function go(mode){
   const ok = await openCamera();
   if (!ok){ $('startErr').textContent = 'Kamera açılamadı. Safari\'de aç ve kamera izni ver.'; $('startErr').hidden = false; await new Promise(r=>setTimeout(r,1500)); }
   $('bMode').textContent = MODE === 'desk' ? '📷 MASA' : '📷 ODA';
-  $('start').hidden = true; ['bMode','bHand','bGear','bReset','bar'].forEach(id => $(id).hidden = false);
+  $('start').hidden = true; ['bMode','bHand','bGear','bReset','bStage','bar'].forEach(id => $(id).hidden = false);
   resize(); requestAnimationFrame(loop);
   setTimeout(() => { recenter(); startBoot(); }, 300);
   setTimeout(() => { S.answer = `Tüm sistemler çevrimiçi. Hoş geldin ${USER}. Bugün ne inşa ediyoruz, efendim?`; speak(S.answer); }, 1900);
