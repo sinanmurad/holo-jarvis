@@ -29,6 +29,15 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 .card .ghost{background:transparent;color:var(--holo);border:1px solid rgba(95,242,255,.45)}
 .card small{color:#6d878e;font-size:12px;line-height:1.4}
 .err{color:var(--amber)!important}
+#hand{top:calc(58px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
+#vrb{top:calc(58px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
+.btn.on{border-color:var(--amber);color:var(--amber)}
+.cur{position:fixed;z-index:6;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:3px solid var(--holo);box-shadow:0 0 16px var(--holo);pointer-events:none;transition:transform .08s,border-color .08s}
+.cur::after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--holo)}
+.cur.pinch{transform:scale(.6);border-color:var(--amber);box-shadow:0 0 22px var(--amber)}
+.cur.hover{border-color:#fff}
+body.vr video{visibility:hidden}
+body.vr .btn,body.vr #bar{display:none!important}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -38,6 +47,9 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 
 <button class="btn" id="recenter" hidden>⟲ ORTALA</button>
 <button class="btn" id="gear" hidden>⚙ AYAR</button>
+<button class="btn" id="hand" hidden>✋ EL</button>
+<button class="btn" id="vrb" hidden>👓 GÖZLÜK</button>
+<div class="cur" id="cur1" hidden></div><div class="cur" id="cur2" hidden></div>
 <div id="bar" hidden>
   <input id="txt" type="text" placeholder="Yaz ya da mikrofona bas…" autocomplete="off" enterkeyhint="send">
   <button id="mic">KONUŞ</button>
@@ -70,6 +82,21 @@ video,#gl{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://js.puter.com/v2/"></script>
+<script type="module">
+import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+let hl = null;
+window.HJHands = {
+  async load(){
+    if (hl) return hl;
+    const fs = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:1, minHandDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    try { hl = await HandLandmarker.createFromOptions(fs, opts("GPU")); } catch(e){ hl = await HandLandmarker.createFromOptions(fs, opts("CPU")); }
+    return hl;
+  },
+  detect(video, t){ return hl ? hl.detectForVideo(video, t) : null; }
+};
+</script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -237,10 +264,19 @@ $('gl').addEventListener('pointerup', e => { const d = dragging; dragging = null
 
 // tap on a panel
 const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
+function hitPanel(nx, ny, cam){
+  v2.set(nx, ny); ray.setFromCamera(v2, cam);
+  const hit = ray.intersectObjects(panels.map(p=>p.mesh))[0];
+  return hit ? hit.object.userData.panel : null;
+}
+let lastTap = 0;
 function tapAt(x, y){
-  v2.set(x/innerWidth*2-1, -(y/innerHeight)*2+1); ray.setFromCamera(v2, camera);
-  const hit = ray.intersectObjects(panels.map(p=>p.mesh))[0]; if (!hit) return;
-  const p = hit.object.userData.panel;
+  const now = performance.now();
+  if (vr){ if (now - lastTap < 400) toggleVR(); lastTap = now; return; }
+  lastTap = now;
+  const p = hitPanel(x/innerWidth*2-1, -(y/innerHeight)*2+1, camera); if (p) activatePanel(p);
+}
+function activatePanel(p){
   p.pop = 1;
   if (p === pDialog) toggleListen();
   else if (p === pStatus) ask('Sistem durumunu kısaca raporla.');
@@ -257,8 +293,83 @@ function loop(t){
   sweep += dt*1.6; wt += dt;
   S.level = S.mode==='speaking' ? 0.5+0.5*Math.sin(t*0.02) : (S.mode==='listening' ? 0.4+0.4*Math.sin(t*0.013) : 0);
   pRadar.redraw(); pVoice.redraw();
-  panels.forEach(p => { p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + p.phase)*0.015; if (p.pop){ p.pop = Math.max(0, p.pop - dt*3); const s = 1 + 0.08*p.pop; p.mesh.scale.set(s,s,s); } });
-  updateCamera(); renderer.render(scene, camera); requestAnimationFrame(loop);
+  panels.forEach(p => { p.mesh.position.y = p.baseY + Math.sin(t*0.0012 + p.phase)*0.015; p.pop = Math.max(0, (p.pop||0) - dt*3); const s = 1 + 0.08*p.pop + (p.hover ? 0.05 : 0); p.mesh.scale.set(s,s,s); });
+  if (handsOn) handTick(t);
+  updateCamera(); renderFrame(); requestAnimationFrame(loop);
+}
+
+// ---------------- stereo (headset) mode ----------------
+let vr = false, vtex = null, wake = null;
+const eyes = [new THREE.PerspectiveCamera(72, 1, 0.05, 50), new THREE.PerspectiveCamera(72, 1, 0.05, 50)];
+function cropBg(aspect){
+  const v = $('cam'); if (!vtex || !v.videoWidth) return;
+  const va = v.videoWidth / v.videoHeight;
+  if (va > aspect){ vtex.repeat.set(aspect/va, 1); vtex.offset.set((1-aspect/va)/2, 0); }
+  else { vtex.repeat.set(1, va/aspect); vtex.offset.set(0, (1-va/aspect)/2); }
+}
+function renderFrame(){
+  const W = innerWidth, H = innerHeight;
+  if (!vr){ renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); renderer.render(scene, camera); return; }
+  const a = (W/2)/H; cropBg(a); renderer.setScissorTest(true);
+  eyes.forEach((c, i) => {
+    c.position.copy(camera.position); c.quaternion.copy(camera.quaternion); c.translateX(i ? 0.032 : -0.032);
+    c.aspect = a; c.updateProjectionMatrix();
+    renderer.setViewport(i*W/2, 0, W/2, H); renderer.setScissor(i*W/2, 0, W/2, H); renderer.render(scene, c);
+  });
+}
+async function toggleVR(){
+  vr = !vr; document.body.classList.toggle('vr', vr);
+  if (vr){
+    if (!vtex){ vtex = new THREE.VideoTexture($('cam')); vtex.minFilter = THREE.LinearFilter; }
+    scene.background = vtex;
+    try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch(e){}
+    if (!handsOn) toggleHands();
+    S.you = ''; S.answer = 'Gözlük modu aktif efendim. Telefonu yatay olarak gözlüğe takın. Çıkmak için ekrana iki kez dokunun.'; speak(S.answer);
+    setTimeout(recenter, 2500);
+  } else {
+    scene.background = null;
+    try { if (wake){ await wake.release(); wake = null; } } catch(e){}
+  }
+}
+$('vrb').onclick = toggleVR;
+
+// ---------------- hand control ----------------
+let handsOn = false, lastVT = -1, pinchDown = false, hoverP = null, sm = null, lostAt = 0;
+const cur1 = $('cur1'), cur2 = $('cur2');
+async function toggleHands(){
+  if (handsOn){ handsOn = false; cur1.hidden = cur2.hidden = true; setHover(null); $('hand').classList.remove('on'); $('hand').textContent = '✋ EL'; return; }
+  if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
+  $('hand').textContent = '✋ YÜKLENİYOR…';
+  try {
+    await window.HJHands.load(); handsOn = true; $('hand').classList.add('on'); $('hand').textContent = '✋ EL: AÇIK';
+    if (!vr){ S.you=''; S.answer = 'El kontrolü aktif efendim. Elinizi kameranın önüne uzatın, panelin üstüne getirin ve başparmakla işaret parmağınızı birleştirin.'; speak(S.answer); }
+  } catch(e){ $('hand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim. İnternet bağlantısını kontrol edin.'; pDialog.redraw(); }
+}
+$('hand').onclick = toggleHands;
+function setHover(p){ if (hoverP === p) return; if (hoverP) hoverP.hover = false; hoverP = p; if (p) p.hover = true; }
+function handTick(t){
+  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT) return;
+  lastVT = v.currentTime;
+  let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
+  const lm = r && r.landmarks && r.landmarks[0];
+  if (!lm){ if (t - lostAt > 250){ cur1.hidden = cur2.hidden = true; setHover(null); pinchDown = false; sm = null; } return; }
+  lostAt = t;
+  const va = v.videoWidth / v.videoHeight;
+  const d = (a, b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
+  const pinch = d(lm[4], lm[8]) / (d(lm[0], lm[9]) || 0.1);
+  const raw = { x:(lm[4].x + lm[8].x)/2, y:(lm[4].y + lm[8].y)/2 };
+  sm = sm ? { x: sm.x*0.55 + raw.x*0.45, y: sm.y*0.55 + raw.y*0.45 } : raw;
+  // video coords → view coords (object-fit: cover)
+  const W = innerWidth, H = innerHeight, vw = vr ? W/2 : W;
+  const sc = Math.max(vw / v.videoWidth, H / v.videoHeight);
+  const ex = (vw - v.videoWidth*sc)/2 + sm.x*v.videoWidth*sc, ey = (H - v.videoHeight*sc)/2 + sm.y*v.videoHeight*sc;
+  cur1.hidden = false; cur1.style.left = ex + 'px'; cur1.style.top = ey + 'px';
+  if (vr){ cur2.hidden = false; cur2.style.left = (ex + W/2) + 'px'; cur2.style.top = ey + 'px'; } else cur2.hidden = true;
+  const p = hitPanel(ex/vw*2-1, -(ey/H)*2+1, vr ? eyes[0] : camera);
+  setHover(p);
+  [cur1, cur2].forEach(c => { c.classList.toggle('pinch', pinch < 0.35); c.classList.toggle('hover', !!p); });
+  if (pinch < 0.32 && !pinchDown){ pinchDown = true; if (p) activatePanel(p); }
+  else if (pinch > 0.48) pinchDown = false;
 }
 
 // ---------------- voice out ----------------
@@ -381,7 +492,7 @@ $('go').onclick = async () => {
     errEl.textContent = 'Kamera açılamadı. Safari\'de açtığından ve kamera iznini verdiğinden emin ol. Kamera olmadan siyah arka planla devam ediyorum.'; errEl.hidden = false;
     await new Promise(r=>setTimeout(r, 1800));
   }
-  $('start').hidden = true; ['recenter','gear','bar'].forEach(id=>$(id).hidden=false);
+  $('start').hidden = true; ['recenter','gear','bar','hand','vrb'].forEach(id=>$(id).hidden=false);
   requestAnimationFrame(loop);
   setTimeout(()=>{ recenter(); }, 400);
   setTimeout(()=>{ S.answer = 'Tüm sistemler çevrimiçi. Bugün ne inşa ediyoruz, efendim?'; speak(S.answer); }, 700);
