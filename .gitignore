@@ -1,0 +1,4 @@
+ios/HoloJarvis.xcodeproj/
+ios/HoloJarvis/Info.plist
+*.p8
+cert_key*

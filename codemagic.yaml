@@ -1,0 +1,37 @@
+workflows:
+  holo-jarvis-ios:
+    name: Holo Jarvis iOS TestFlight
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      xcode: latest
+      groups:
+        - holo_secrets
+      vars:
+        BUNDLE_ID: "com.sinanmurad.holojarvis"
+    scripts:
+      - name: Generate Xcode project
+        script: |
+          brew install xcodegen
+          cd ios
+          printf 'enum Secrets {\n    static let groqKey = "%s"\n}\n' "$GROQ_API_KEY" > HoloJarvis/Secrets.swift
+          export BUILD_NUMBER=${BUILD_NUMBER:-1}
+          xcodegen generate
+      - name: Code signing
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build ipa
+        script: |
+          xcode-project build-ipa --project ios/HoloJarvis.xcodeproj --scheme HoloJarvis
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
