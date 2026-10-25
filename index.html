@@ -429,7 +429,19 @@ function updateCamera(){
   else camera.quaternion.identity();
 }
 function recenter(){ updateCamera(); if (MODE === 'desk'){ hud.rotation.set(0,0,0); return; } const f = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); hud.rotation.set(0, Math.atan2(-f.x, -f.z), 0); }
-let stream = null;
+let stream = null, camLastT = -1, camLastChange = 0, camRestarting = false, camRestarts = 0;
+function camWatch(){
+  const v = $('cam'); if (!stream || camRestarting || document.hidden) return;
+  const now = performance.now();
+  if (v.currentTime !== camLastT){ camLastT = v.currentTime; camLastChange = now; return; }
+  const stalled = now - camLastChange;
+  if (stalled > 700 && stalled < 1800){ v.play().catch(()=>{}); }
+  else if (stalled >= 1800){
+    camRestarting = true; camRestarts++; $('diag').textContent = '📷 kamera durdu · yeniden başlatılıyor…'; $('diag').classList.add('warn');
+    openCamera().finally(() => { camRestarting = false; camLastChange = performance.now(); });
+  }
+}
+setInterval(camWatch, 300);
 async function openCamera(){
   if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
   const v = $('cam');
@@ -566,7 +578,7 @@ let calib = null;  // {step:'open'|'fist', samples:[], t0}
 function startCalib(){
   calib = { step:'open', samples:[], t0: performance.now(), min: 9 };
   $('calib').hidden = false; calibUI();
-  S.you = ''; S.answer = 'Kalibrasyon. Elinizi kameraya açık gösterin efendim. Atlamak için ekrana dokunun.'; speak(S.answer);
+  S.you = ''; S.answer = 'Kalibrasyon: ekrandaki talimatı izleyin.'; pDialog.redraw(); SFX.listen();
 }
 function calibUI(msg){
   if (!calib) return;
@@ -591,7 +603,7 @@ function calibFeed(curl){
   if (calib.step === 'open'){
     calib.samples.push(curl); calibUI();
     if (calib.samples.length >= 15 || (age > 7000 && calib.samples.length >= 6)){
-      calib.open = med(calib.samples); calib.step = 'fist'; calib.samples = []; calib.t0 = performance.now(); calib.min = 9; calibUI(); SFX.tap(); speak('Şimdi yumruk yapın efendim.');
+      calib.open = med(calib.samples); calib.step = 'fist'; calib.samples = []; calib.t0 = performance.now(); calib.min = 9; calibUI(); SFX.tap(); tone(880, 880, 0.12, 'sine', 0.06, 0.12);
     }
     return;
   }
@@ -610,12 +622,14 @@ function diagTick(t, ms, r){
   if (t - dT0 > 1000){ dFps = Math.round(dFrames * 1000 / (t - dT0)); dFrames = 0; dT0 = t; }
   const n = (r && r.landmarks && r.landmarks.length) || 0;
   const st = slots.filter(s => s.f).map(s => s.grab ? 'TUTUYOR' : s.fist ? 'YUMRUK' : 'AÇIK').join(' + ');
-  const txt = n ? `✋ ${n} el · ${st || '…'} · ${dFps} fps` : `✋ el görülmüyor · ${dFps} fps`;
+  const eng = (window.HJHands.mode || '').startsWith('main') ? ' · ⚠ yavaş mod' : '';
+  const txt = (n ? `✋ ${n} el · ${st || '…'} · ${dFps} fps` : `✋ el görülmüyor · ${dFps} fps`) + eng;
   if (txt !== dLast){ dLast = txt; const el = $('diag'); el.textContent = txt; el.classList.toggle('warn', !n || dFps < 8); }
 }
 function handTick(t){
   const v = $('cam'); if (v.readyState < 2 || !v.videoWidth) return;
-  if (v.currentTime !== lastVT && t - lastDet >= DET_MS && window.HJHands.send(v, t)){ lastVT = v.currentTime; lastDet = t; }
+  const detGap = (window.HJHands.mode || '').startsWith('main') ? 300 : DET_MS;
+  if (v.currentTime !== lastVT && t - lastDet >= detGap && window.HJHands.send(v, t)){ lastVT = v.currentTime; lastDet = t; }
   const r = window.HJHands.take(); if (!r) return;
   diagTick(t, r.ms, r);
   hctx.clearRect(0, 0, innerWidth, innerHeight);
@@ -898,7 +912,7 @@ async function go(mode){
   setTimeout(() => { S.answer = first ? `Tüm sistemler çevrimiçi${PROFILE.name ? ', ' + PROFILE.name : ''}. Ne yapabildiğimi görmek için “Jarvis, yardım” deyin.` : `Tekrar hoş geldin${PROFILE.name ? ' ' + PROFILE.name : ''}. Bugün ne yapıyoruz, efendim?`; speak(S.answer); }, 1900);
   toggleHands();
 }
-if (location.hash === '#debug') window.__hj = { S, panels, camera, hud, pDialog, pNotes, pProj, slots, command, get scaleOp(){ return scaleOp; }, get handsOn(){ return handsOn; } };
+if (location.hash === '#debug') window.__hj = { S, panels, camera, hud, pDialog, pNotes, pProj, slots, command, get scaleOp(){ return scaleOp; }, get handsOn(){ return handsOn; }, get camRestarts(){ return camRestarts; } };
 $('goDesk').onclick = () => go('desk');
 $('goRoom').onclick = () => go('room');
 })();
