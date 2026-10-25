@@ -40,6 +40,13 @@ body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 .card small{color:#6d878e;font-size:12px;line-height:1.4}
 .row2{display:flex;gap:8px}.row2 button{flex:1}
 .err{color:var(--amber)!important}
+#diag{position:fixed;z-index:6;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 12px/1 ui-monospace,Menlo,monospace;padding:8px 12px;white-space:nowrap;pointer-events:none}
+#diag.warn{border-color:var(--amber);color:var(--amber)}
+#calib{position:fixed;z-index:7;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;color:var(--holo);font:800 30px -apple-system,system-ui,sans-serif;text-shadow:0 0 18px var(--holo);pointer-events:none;width:90%}
+#calib small{display:block;font:600 16px ui-monospace,Menlo,monospace;margin-top:12px;color:var(--ink)}
+#calibBar{width:220px;height:8px;margin:14px auto 0;border:1px solid var(--holo);border-radius:4px;overflow:hidden}
+#calibBar i{display:block;height:100%;width:0;background:var(--holo)}
+body.stage #diag{opacity:.5}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -54,6 +61,8 @@ body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 <button class="btn" id="bGear" hidden>⚙ AYAR</button>
 <button class="btn" id="bReset" hidden>⟲ DÜZEN</button>
 <button class="btn" id="bStage" hidden>📺 SAHNE</button>
+<div id="diag" hidden>✋ el bekleniyor…</div>
+<div id="calib" hidden><span id="calibTxt"></span><small id="calibSub"></small><div id="calibBar"><i id="calibFill"></i></div></div>
 <div id="bar" hidden>
   <input id="txt" type="text" placeholder="Yaz ya da “Jarvis, …” de" autocomplete="off" enterkeyhint="send">
   <button id="mic">DİNLE</button>
@@ -89,6 +98,7 @@ body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://js.puter.com/v2/"></script>
+<script>window.HJ_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);</script>
 <script type="module">
 import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -98,7 +108,7 @@ window.HJHands = {
     if (hl) return hl;
     const fs = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
     const opts = d => ({ baseOptions:{ modelAssetPath:MODEL, delegate:d }, runningMode:"VIDEO", numHands:2, minHandDetectionConfidence:0.45, minHandPresenceConfidence:0.45, minTrackingConfidence:0.45 });
-    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const ios = window.HJ_IOS;
     const to = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('zaman aşımı')), ms))]);
     let last;
     for (const d of (ios ? ["CPU","GPU"] : ["GPU","CPU"])){ try { hl = await to(HandLandmarker.createFromOptions(fs, opts(d)), 45000); return hl; } catch(e){ last = e; } }
@@ -271,7 +281,7 @@ function layout(){
   };
   [[pTop,'top'],[pDialog,'dialog'],[pProj,'proj'],[pNotes,'notes']].forEach(([p,k])=>{ if (!p.moved) setPos(p, ...L[k]); });
 }
-function resetLayout(){ [pTop,pDialog,pProj,pNotes].forEach(p => { p.moved = false; p.user = 1; }); layout(); SFX.open(); }
+function resetLayout(){ [pTop,pDialog,pProj,pNotes].forEach(p => { p.moved = false; p.user = 1; p.mesh.position.z = -D; }); layout(); SFX.open(); }
 
 // ============ RESEARCH / IMAGES ============
 let research = [];
@@ -359,7 +369,7 @@ async function openCamera(){
   if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
   const v = $('cam');
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal:640 }, height:{ ideal:480 }, frameRate:{ ideal:30, max:30 } }, audio:false });
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal: MODE === 'desk' ? 'user' : 'environment' }, width:{ ideal: window.HJ_IOS ? 640 : 1280 }, height:{ ideal: window.HJ_IOS ? 480 : 720 }, frameRate:{ ideal:30, max:30 } }, audio:false });
     v.srcObject = stream; await v.play().catch(()=>{});
   } catch(e){ return false; }
   v.classList.toggle('mirror', MODE === 'desk'); return true;
@@ -465,25 +475,68 @@ function setHover(p, uv){
   if (p && p.rows && uv){ const tg = p.targetAt ? p.targetAt(uv) : null; const r = tg && tg.row != null ? tg.row : -1; if (r !== p.hoverRow){ p.hoverRow = r; p.redraw(); } }
 }
 async function toggleHands(){
-  if (handsOn){ handsOn = false; hctx.clearRect(0,0,innerWidth,innerHeight); setHover(null); $('bHand').classList.remove('on'); $('bHand').textContent = '✋ EL'; return; }
+  if (handsOn){ handsOn = false; calib = null; $('calib').hidden = true; $('diag').hidden = true; hctx.clearRect(0,0,innerWidth,innerHeight); setHover(null); $('bHand').classList.remove('on'); $('bHand').textContent = '✋ EL'; return; }
   if (!window.HJHands){ S.you=''; S.answer = 'El takibi modülü yüklenemedi efendim. Sayfayı yenileyin.'; pDialog.redraw(); return; }
   $('bHand').textContent = '✋ YÜKLENİYOR…';
-  try { await window.HJHands.load(); handsOn = true; $('bHand').classList.add('on'); $('bHand').textContent = '✋ EL: AÇIK'; }
+  try { await window.HJHands.load(); handsOn = true; $('bHand').classList.add('on'); $('bHand').textContent = '✋ EL: AÇIK'; $('diag').hidden = false; if (!store.get('handCal')) setTimeout(startCalib, 2600); }
   catch(e){ $('bHand').textContent = '✋ EL'; S.you=''; S.answer = 'El takibi başlatılamadı efendim: ' + ((e && e.message) || e); pDialog.redraw(); }
 }
-$('bHand').onclick = toggleHands;
+$('bHand').onclick = () => { if (bhT === -1){ bhT = 0; return; } toggleHands(); };
+let bhT = 0; $('bHand').addEventListener('pointerdown', () => { bhT = setTimeout(() => { bhT = -1; if (handsOn) startCalib(); }, 700); });
+$('bHand').addEventListener('pointerup', () => clearTimeout(bhT));
 
-let scaleOp = null;
+let scaleOp = null, zSeq = 0;
 const TIP = [8,12,16,20], PIP = [6,10,14,18];
+const MCP = [5,9,13,17];
+const DET_MS = window.HJ_IOS ? 70 : 30;
 function handPose(lm, va){
-  const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y);
+  const d = (a,b) => Math.hypot((a.x-b.x)*va, a.y-b.y, ((a.z||0)-(b.z||0))*0.6);
   const size = d(lm[0], lm[9]) || 0.1;
-  let ext = 0; for (let k=0;k<4;k++) if (d(lm[TIP[k]], lm[0]) > d(lm[PIP[k]], lm[0]) * 1.12) ext++;
-  return { size, ext };
+  let c = 0; for (let k=0;k<4;k++) c += d(lm[TIP[k]], lm[0]) / (d(lm[MCP[k]], lm[0]) || 0.05);
+  return { size, curl: c/4 };            // open hand ≈ 1.8–2.0, fist ≈ 0.9–1.2
+}
+let CAL = { fistT: 1.35, openT: 1.55 };
+try { const c = JSON.parse(store.get('handCal','null')); if (c && c.fistT && c.openT) CAL = c; } catch(e){}
+let calib = null;  // {step:'open'|'fist', samples:[], t0}
+function startCalib(){
+  calib = { step:'open', samples:[], t0: performance.now() };
+  $('calib').hidden = false; calibUI();
+  S.you = ''; S.answer = 'Kalibrasyon. Elinizi kameraya gösterin ve parmaklarınızı açık tutun efendim.'; speak(S.answer);
+}
+function calibUI(){
+  if (!calib) return;
+  $('calibTxt').textContent = calib.step === 'open' ? '✋ ELİNİ AÇ VE TUT' : '✊ ŞİMDİ YUMRUK YAP';
+  $('calibSub').textContent = calib.samples.length ? 'öğreniyorum…' : 'elini kameraya göster';
+  $('calibFill').style.width = Math.min(100, calib.samples.length / 20 * 100) + '%';
+}
+function calibFeed(curl){
+  if (!calib) return;
+  if (performance.now() - calib.t0 < 1200) return;      // give time to get into pose
+  if (calib.step === 'fist' && curl > calib.open - 0.25){ $('calibSub').textContent = 'parmaklarını tamamen kapat'; return; }   // still open → ignore
+  calib.samples.push(curl); calibUI();
+  if (calib.samples.length < 20) return;
+  const med = a => { const b = a.slice().sort((x,y)=>x-y); return b[Math.floor(b.length/2)]; };
+  if (calib.step === 'open'){ calib.open = med(calib.samples); calib.step = 'fist'; calib.samples = []; calib.t0 = performance.now(); calibUI(); SFX.tap(); speak('Şimdi yumruk yapın efendim.'); return; }
+  const fist = med(calib.samples), open = calib.open;
+  if (open - fist < 0.2){ calib = { step:'open', samples:[], t0: performance.now() }; calibUI(); speak('Fark yeterince net değil efendim. Elinizi biraz daha yakına getirip tekrar açın.'); return; }
+  CAL = { fistT: fist + (open-fist)*0.35, openT: fist + (open-fist)*0.6, open, fist };
+  store.set('handCal', JSON.stringify(CAL)); calib = null; $('calib').hidden = true; SFX.open();
+  slots.forEach(s => { s.fist = true; s.fistN = 2; s.openN = 0; s.grab = null; });   // must open hand before first grab
+  S.answer = 'Kalibrasyon tamam efendim. Açık el ile hedefte bekleyin seçer, yumruk ile tutup taşıyın.'; speak(S.answer);
+}
+let dFrames = 0, dT0 = 0, dFps = 0, dMs = 0, dLast = '';
+function diagTick(t, ms, r){
+  dFrames++; dMs = dMs*0.8 + ms*0.2;
+  if (t - dT0 > 1000){ dFps = Math.round(dFrames * 1000 / (t - dT0)); dFrames = 0; dT0 = t; }
+  const n = (r && r.landmarks && r.landmarks.length) || 0;
+  const st = slots.filter(s => s.f).map(s => s.grab ? 'TUTUYOR' : s.fist ? 'YUMRUK' : 'AÇIK').join(' + ');
+  const txt = n ? `✋ ${n} el · ${st || '…'} · ${dFps} fps` : `✋ el görülmüyor · ${dFps} fps`;
+  if (txt !== dLast){ dLast = txt; const el = $('diag'); el.textContent = txt; el.classList.toggle('warn', !n || dFps < 8); }
 }
 function handTick(t){
-  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT || t - lastDet < 75) return; lastVT = v.currentTime; lastDet = t;
-  let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
+  const v = $('cam'); if (v.readyState < 2 || !v.videoWidth || v.currentTime === lastVT || t - lastDet < DET_MS) return; lastVT = v.currentTime; lastDet = t;
+  const t0 = performance.now(); let r; try { r = window.HJHands.detect(v, t); } catch(e){ return; }
+  diagTick(t, performance.now() - t0, r);
   hctx.clearRect(0, 0, innerWidth, innerHeight);
   const W = innerWidth, H = innerHeight, va = v.videoWidth / v.videoHeight;
   const sc = Math.max(W / v.videoWidth, H / v.videoHeight), ox = (W - v.videoWidth*sc)/2, oy = (H - v.videoHeight*sc)/2;
@@ -492,8 +545,8 @@ function handTick(t){
   const found = ((r && r.landmarks) || []).map(lm => {
     const P = lm.map(map), pose = handPose(lm, va);
     const cx = (P[0][0]+P[5][0]+P[9][0]+P[17][0])/4, cy = (P[0][1]+P[5][1]+P[9][1]+P[17][1])/4;   // palm centre: stable at distance
-    return { P, x:cx, y:cy, ext:pose.ext, size:pose.size };
-  }).filter(f => f.size > 0.05);
+    return { P, x:cx, y:cy, curl:pose.curl, size:pose.size };
+  }).filter(f => f.size > 0.04);
   const used = new Set();
   slots.forEach(s => { let best = -1, bd = 1e9; found.forEach((f,i)=>{ if (used.has(i)) return; const dd = Math.hypot(f.x-s.x, f.y-s.y); if (dd < bd){ bd = dd; best = i; } });
     if (best >= 0 && bd < 300){ used.add(best); s.f = found[best]; s.seen = t; } else s.f = null; });
@@ -507,7 +560,8 @@ function handTick(t){
     const dist = Math.hypot(f.x - s.x, f.y - s.y), a = Math.min(0.85, 0.22 + dist/220);
     s.x += (f.x - s.x)*a; s.y += (f.y - s.y)*a;
     // fist / open with hysteresis
-    if (f.ext <= 1){ s.fistN++; s.openN = 0; } else if (f.ext >= 3){ s.openN++; s.fistN = 0; }
+    if (calib){ calibFeed(f.curl); drawHand(f.P, 'idle'); return; }
+    if (f.curl < CAL.fistT){ s.fistN++; s.openN = 0; } else if (f.curl > CAL.openT){ s.openN++; s.fistN = 0; }
     const wasFist = s.fist;
     if (!s.fist && s.fistN >= 2) s.fist = true;
     if (s.fist && s.openN >= 2) s.fist = false;
@@ -515,7 +569,7 @@ function handTick(t){
     if (s.fist && !wasFist){                 // grab start
       const pk = pick(s.x, s.y);
       if (pk){ const p = pk.p, hp = screenToPlane(s.x, s.y, p.mesh.position.z);
-        if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; SFX.grab(); } }
+        if (hp){ s.grab = { p, ox: p.mesh.position.x - hp.x, oy: p.mesh.position.y - hp.y }; p.moved = true; p.mesh.position.z = -D + 0.2 + (zSeq = (zSeq + 1) % 40) * 0.004; SFX.grab(); } }
       s.dwellKey = null;
     }
     if (!s.fist && wasFist){ if (s.grab) SFX.drop(); s.grab = null; }
@@ -661,6 +715,7 @@ function command(txt){
   if ((m = low.match(/^(not al|not et|not yaz|hatırlat)[:,\s]*(.*)$/))){ addNote(txt.slice(txt.length - m[2].length)); return; }
   if (/^notları (sil|temizle)/.test(low)){ notes = []; saveNotes(); pNotes.redraw(); S.answer = 'Notlar temizlendi efendim.'; speak(S.answer); return; }
   if (/^(kapat|temizle|panelleri kapat|görselleri kapat)\b/.test(low)){ clearResearch(); S.answer = 'Temizlendi efendim.'; speak(S.answer); return; }
+  if (/kalibr|eli(mi)? (öğren|tanı)/.test(low)){ if (!handsOn) toggleHands().then(startCalib); else startCalib(); return; }
   if (/sahne modu(nu)? (aç|başlat)|sahneye geç/.test(low)){ setStage(true); return; }
   if (/sahne modu(nu)? kapat|sahneden çık/.test(low)){ setStage(false); return; }
   if (/^(düzen|düzenle|sıfırla|ortala)\b/.test(low)){ recenter(); resetLayout(); S.answer = 'Panelleri yerine aldım efendim.'; speak(S.answer); return; }
