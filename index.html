@@ -6,6 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
 <title>Holo Jarvis</title>
+<meta name="description" content="Telefonundaki kişisel holografik asistan. Sesinle ve ellerinle yönet.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
 <style>
 :root{--holo:#5ff2ff;--amber:#ffb547;--ink:#d6ecf0;--glass:rgba(4,16,20,.72)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -39,8 +45,11 @@ body.stage.peek .btn,body.stage.peek #bar{opacity:1;pointer-events:auto}
 .card .ghost{background:transparent;color:var(--holo);border:1px solid rgba(95,242,255,.45)}
 .card small{color:#6d878e;font-size:12px;line-height:1.4}
 .row2{display:flex;gap:8px}.row2 button{flex:1}
+details.ai{border:1px solid rgba(95,242,255,.25);border-radius:8px;padding:10px 12px}
+details.ai[open]{display:flex;flex-direction:column;gap:10px}
+details.ai summary{color:var(--holo);font:600 13px ui-monospace,Menlo,monospace;cursor:pointer}
 .err{color:var(--amber)!important}
-#diag{position:fixed;z-index:6;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 12px/1 ui-monospace,Menlo,monospace;padding:8px 12px;white-space:nowrap;pointer-events:none}
+#diag{position:fixed;z-index:6;bottom:calc(92px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--glass);border:1px solid rgba(95,242,255,.45);color:var(--holo);border-radius:999px;font:600 12px/1 ui-monospace,Menlo,monospace;padding:8px 12px;white-space:nowrap;pointer-events:none}
 #diag.warn{border-color:var(--amber);color:var(--amber)}
 #calib{position:fixed;z-index:7;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;color:var(--holo);font:800 30px -apple-system,system-ui,sans-serif;text-shadow:0 0 18px var(--holo);pointer-events:none;width:90%}
 #calib small{display:block;font:600 16px ui-monospace,Menlo,monospace;margin-top:12px;color:var(--ink)}
@@ -71,15 +80,19 @@ body.stage #diag{opacity:.5}
 <div class="sheet" id="start">
   <div class="card">
     <h1>J.A.R.V.I.S.</h1>
-    <p><b>Masa modu:</b> Telefonu dik koy, ön kamera seni görsün.<br>✋ <b>Elini açık tut ve bekle</b> → seçer (halka dolar)<br>✊ <b>Yumruk yap</b> → paneli tutar, elinle taşı, elini aç → bırak<br>✊✊ <b>İki yumruk</b> → aç/kapa ile büyüt/küçült<br>🎙 <b>“Jarvis, …”</b> diye konuş</p>
+    <p>Telefonundaki kişisel holografik asistan. Telefonu dik koy, sesinle ve ellerinle yönet.</p>
+    <input id="uName" type="text" placeholder="Adın" autocomplete="given-name" maxlength="24">
+    <input id="uCity" type="text" placeholder="Şehrin (hava durumu için)" autocomplete="address-level2" maxlength="40">
     <div class="row2">
-      <button id="goDesk">MASA MODU</button>
+      <button id="goDesk">BAŞLAT</button>
       <button id="goRoom" class="ghost">ODA (AR) MODU</button>
     </div>
-    <button id="puter0" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
-    <small id="puterState0">Anahtar gerekmez. Açılan pencerede Puter hesabıyla giriş yap.</small>
-    <input id="key0" type="password" placeholder="ya da API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
-    <small>Anahtar sadece bu telefonda saklanır.</small>
+    <details class="ai"><summary>Yapay zekâ bağlantısı</summary>
+      <button id="puter0" class="ghost">ÜCRETSİZ CLAUDE'A BAĞLAN (PUTER)</button>
+      <small id="puterState0">Anahtar gerekmez. Açılan pencerede Puter hesabıyla giriş yap.</small>
+      <input id="key0" type="password" placeholder="ya da API anahtarı: Groq (gsk_…) / Anthropic (sk-ant-…)" autocomplete="off">
+    </details>
+    <small>Kamera görüntün ve notların telefonundan çıkmaz. Sadece Jarvis'e sorduğun sorular yapay zekâya gönderilir.</small>
     <p id="startErr" class="err" hidden></p>
   </div>
 </div>
@@ -130,15 +143,13 @@ const store = {
 $('key0').value = store.get('groqKey'); $('key1').value = store.get('groqKey');
 
 // ============ USER PROFILE ============
-const USER = 'smd';
-const PROJECTS = [
-  { name:'Famira', desc:'Instagram kayıtları için AI ikinci beyin · App Store\'da canlı' },
-  { name:'Atlas', desc:'Finansal sinyal platformu · Flutter + Python botlar' },
-  { name:'FreelanceLedger', desc:'Freelancer gelir-gider takibi · Shipaton' },
-  { name:'PromptForge', desc:'Web tabanlı AI prompt ürünü' },
-  { name:'Holo-Jarvis', desc:'Bu sistem · holografik asistan' },
-  { name:'Bahçem Peyzaj', desc:'Peyzaj işi · Instagram içerikleri' }
-];
+let PROFILE = { name:'', city:'', lat:null, lon:null, tz:'auto' };
+try { Object.assign(PROFILE, JSON.parse(store.get('profile','{}')) || {}); } catch(e){}
+const saveProfile = () => store.set('profile', JSON.stringify(PROFILE));
+const uname = () => PROFILE.name || 'efendim';
+let FOCUS = []; try { FOCUS = JSON.parse(store.get('focus','[]')) || []; } catch(e){ FOCUS = []; }
+const saveFocus = () => store.set('focus', JSON.stringify(FOCUS.slice(0, 6)));
+$('uName').value = PROFILE.name || ''; $('uCity').value = PROFILE.city || '';
 
 // ============ STATE ============
 let MODE = 'desk';
@@ -203,7 +214,7 @@ const pTop = makePanel(1400, 250, (ctx,w,h)=>{
   frame(ctx,w,h); const d = new Date();
   ctx.save(); glow(ctx, HOLO, 18); ctx.fillStyle = HOLO; ctx.textBaseline = 'middle';
   ctx.font = '800 64px -apple-system,system-ui,sans-serif'; ctx.fillText('J.A.R.V.I.S.', 44, 95);
-  ctx.font = '500 26px ui-monospace,Menlo,monospace'; ctx.fillStyle = INK; ctx.fillText(`Hoş geldin ${USER}`, 48, 170);
+  ctx.font = '500 26px ui-monospace,Menlo,monospace'; ctx.fillStyle = INK; ctx.fillText(PROFILE.name ? `Hoş geldin ${PROFILE.name}` : 'Kişisel asistan', 48, 170);
   ctx.textAlign = 'center'; ctx.fillStyle = HOLO; ctx.font = '700 92px ui-monospace,Menlo,monospace';
   ctx.fillText(`${pad(d.getHours())}:${pad(d.getMinutes())}`, w/2, 100);
   ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK;
@@ -212,8 +223,8 @@ const pTop = makePanel(1400, 250, (ctx,w,h)=>{
   if (weather){
     ctx.fillStyle = HOLO; ctx.font = '700 72px -apple-system,system-ui,sans-serif'; ctx.fillText(`${Math.round(weather.t)}°`, w-44, 95);
     ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK;
-    ctx.fillText(`İstanbul · ${weather.txt} · ${Math.round(weather.min)}°/${Math.round(weather.max)}°`, w-44, 170);
-  } else { ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK; ctx.fillText('Hava durumu alınıyor…', w-44, 125); }
+    ctx.fillText(`${PROFILE.city || 'Konum'} · ${weather.txt} · ${Math.round(weather.min)}°/${Math.round(weather.max)}°`, w-44, 170);
+  } else { ctx.font = '500 26px -apple-system,system-ui,sans-serif'; ctx.fillStyle = INK; ctx.fillText(PROFILE.lat != null ? 'Hava durumu alınıyor…' : '“Jarvis, şehrim …” de', w-44, 125); }
   ctx.restore();
 });
 
@@ -239,17 +250,19 @@ const pDialog = makePanel(1024, 600, (ctx,w,h)=>{
 function rowAt(p, uv){ const py = (1-uv.y)*p.rows.H; const i = Math.floor((py - p.rows.top)/p.rows.h); return (i >= 0 && i < p.rows.n) ? i : -1; }
 
 const pProj = makePanel(760, 720, (ctx,w,h,p)=>{
-  frame(ctx,w,h); header(ctx,'PROJELERİM',w,'DOKUN → ODAK');
+  frame(ctx,w,h); header(ctx,'ODAK',w,'SEÇ → ÖNERİ');
   ctx.save(); ctx.textBaseline = 'top';
-  PROJECTS.forEach((pr,i)=>{ const y = 100 + i*100;
+  if (!FOCUS.length){ ctx.fillStyle = 'rgba(214,236,240,.7)'; ctx.font = '400 27px -apple-system,system-ui,sans-serif';
+    wrap(ctx, 'Hedeflerini, işlerini ya da projelerini ekle. “Jarvis, odağa ekle: spor salonu” de.', w-80).forEach((l,i)=>ctx.fillText(l, 40, 120+i*38)); }
+  FOCUS.forEach((pr,i)=>{ const y = 100 + i*100;
     if (p.hoverRow === i){ ctx.fillStyle = 'rgba(95,242,255,.16)'; ctx.fillRect(22, y-6, w-44, 92); }
-    glow(ctx, HOLO, 8); ctx.fillStyle = HOLO; ctx.font = '700 34px -apple-system,system-ui,sans-serif'; ctx.fillText(pr.name, 40, y+4);
-    ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(214,236,240,.7)'; ctx.font = '400 22px -apple-system,system-ui,sans-serif'; ctx.fillText(pr.desc, 40, y+48);
+    glow(ctx, HOLO, 8); ctx.fillStyle = HOLO; ctx.font = '700 34px -apple-system,system-ui,sans-serif'; clip(wrap(ctx, pr.name, w-80), 1).forEach(l => ctx.fillText(l, 40, y+4));
+    if (pr.desc){ ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(214,236,240,.7)'; ctx.font = '400 22px -apple-system,system-ui,sans-serif'; clip(wrap(ctx, pr.desc, w-80), 1).forEach(l => ctx.fillText(l, 40, y+48)); }
     ctx.fillStyle = 'rgba(95,242,255,.25)'; ctx.fillRect(40, y+88, w-80, 1);
   }); ctx.restore();
-}, { hoverRow:-1, rows:{ top:100, h:100, n:PROJECTS.length, H:720 },
-  targetAt(uv){ const i = rowAt(this, uv); return i < 0 ? null : { id:'row'+i, ms:1000, row:i }; },
-  onTarget(id){ const pr = PROJECTS[+id.slice(3)]; if (pr) ask(`${pr.name} projem için bugün odaklanmam gereken tek somut adımı söyle. Proje: ${pr.desc}.`); }
+}, { hoverRow:-1, rows:{ top:100, h:100, n:6, H:720 },
+  targetAt(uv){ const i = rowAt(this, uv); return (i < 0 || i >= FOCUS.length) ? null : { id:'row'+i, ms:1000, row:i }; },
+  onTarget(id){ const pr = FOCUS[+id.slice(3)]; if (pr) ask(`"${pr.name}" konusunda bugün atabileceğim tek somut adımı söyle.${pr.desc ? ' Detay: ' + pr.desc + '.' : ''}`); }
 });
 
 const pNotes = makePanel(760, 720, (ctx,w,h,p)=>{
@@ -300,15 +313,15 @@ async function commonsImages(q, n=4){
   const j = await (await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=${n*3}&gsrsearch=${encodeURIComponent('filetype:bitmap ' + q)}&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json&origin=*`)).json();
   return Object.values((j.query && j.query.pages) || {}).sort((a,b)=>a.index-b.index).map(p => p.imageinfo && p.imageinfo[0]).filter(i => i && /jpeg|png/.test(i.mime)).map(i => i.thumburl || i.url).slice(0, n);
 }
-function infoPanel(info){
+function infoPanel(info, label){
   return makePanel(900, 700, (ctx,w,h)=>{
-    frame(ctx,w,h); header(ctx,'ARAŞTIRMA',w,'✕ KAPAT', AMBER);
+    ctx.fillStyle = 'rgba(2,12,16,.94)'; ctx.fillRect(8,8,w-16,h-16); frame(ctx,w,h); header(ctx, label || 'ARAŞTIRMA',w,'✕ KAPAT', AMBER);
     ctx.save(); glow(ctx, HOLO, 8); ctx.textBaseline = 'top'; ctx.fillStyle = HOLO; ctx.font = '800 42px -apple-system,system-ui,sans-serif';
     const tl = clip(wrap(ctx, info.title, w-80), 2); tl.forEach((l,i)=>ctx.fillText(l, 40, 100+i*50));
     let y = 100 + tl.length*50 + 16; ctx.shadowBlur = 0; ctx.fillStyle = INK; ctx.font = '400 27px -apple-system,system-ui,sans-serif';
     clip(wrap(ctx, info.text, w-80), Math.floor((h-70-y)/37)).forEach((l,i)=>ctx.fillText(l, 40, y+i*37));
-    ctx.fillStyle = 'rgba(214,236,240,.5)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('Kaynak: Vikipedi', 40, h-44); ctx.restore();
-  }, { transient:true, targetAt(uv){ return ((1-uv.y)*700 < 90 && uv.x > 0.6) ? { id:'close', ms:900 } : null; }, onTarget(){ clearResearch(); } });
+    if (!label){ ctx.fillStyle = 'rgba(214,236,240,.5)'; ctx.font = '500 18px ui-monospace,Menlo,monospace'; ctx.fillText('Kaynak: Vikipedi', 40, h-44); } ctx.restore();
+  }, { transient:true, normal:true, targetAt(uv){ return ((1-uv.y)*700 < 90 && uv.x > 0.6) ? { id:'close', ms:900 } : null; }, onTarget(){ clearResearch(); } });
 }
 function imagePanel(src){
   const p = makePanel(800, 800, (ctx,w,h,pp)=>{
@@ -327,7 +340,7 @@ function imagePanel(src){
   im.onerror = () => { p.failed = true; p.redraw(); };
   im.src = src; return p;
 }
-function placeTransient(p, x, y, wWorld){ p.mesh.position.set(x, y, -D + 0.15); p.fit = wWorld; p.baseY = y; p.moved = true; p.pop = 1; research.push(p); }
+function placeTransient(p, x, y, wWorld){ p.mesh.position.set(x, y, -D + 0.3 + research.length*0.01); p.fit = wWorld; p.baseY = y; p.moved = true; p.pop = 1; research.push(p); }
 async function doResearch(q, withImages){
   clearResearch(); SFX.open();
   const { w, h } = viewSize(); const portrait = camera.aspect < 1;
@@ -338,8 +351,8 @@ async function doResearch(q, withImages){
   if (err && !info){ S.answer = 'Vikipedi\'ye ulaşamadım efendim (' + (err.message || 'ağ hatası') + ').'; speak(S.answer); return; }
   if (!withImages){
     const ip = infoPanel(info || { title:q, text:'Bu konuda kaynak bulamadım efendim.' });
-    placeTransient(ip, portrait ? 0 : -w*0.14, portrait ? h*0.02 : 0, portrait ? w*0.9 : w*0.4);
-    if (info && info.img){ const imp = imagePanel(info.img); placeTransient(imp, portrait ? w*0.22 : w*0.24, portrait ? -h*0.3 : 0, portrait ? w*0.44 : w*0.3); }
+    placeTransient(ip, portrait ? 0 : -w*0.14, portrait ? h*0.06 : 0, portrait ? w*0.8 : w*0.36);
+    if (info && info.img){ const imp = imagePanel(info.img); placeTransient(imp, portrait ? w*0.2 : w*0.22, portrait ? -h*0.28 : 0, portrait ? w*0.4 : w*0.27); }
     const say = info ? (info.text.split(/(?<=\.)\s/).slice(0,2).join(' ') || info.title) : 'Bu konuda kaynak bulamadım efendim.';
     S.answer = say; speak(say); return;
   }
@@ -348,10 +361,20 @@ async function doResearch(q, withImages){
   try { urls = await commonsImages((info && (info.en || info.title)) || q, 4); } catch(e){}
   if (!urls.length && info && info.img) urls = [info.img];
   if (!urls.length){ S.answer = 'Görsel bulamadım efendim.'; speak(S.answer); return; }
-  const cols = portrait ? 2 : 4, cw = portrait ? w*0.46 : w*0.22;
+  const cols = portrait ? 2 : 4, cw = portrait ? w*0.4 : w*0.2;
   urls.forEach((u,i)=>{ const p = imagePanel(u); const c = i % cols, r = Math.floor(i/cols);
     placeTransient(p, (c - (cols-1)/2) * (cw*1.04), portrait ? (h*0.1 - r*cw*1.04) : 0, cw); });
   S.answer = `${(info && info.title) || q} için ${urls.length} görsel buldum efendim. Çimdikle tut, iki elle büyüt.`; speak(S.answer);
+}
+
+function showHelp(){
+  clearResearch(); SFX.open();
+  const { w, h } = viewSize(); const portrait = camera.aspect < 1;
+  const p = infoPanel({ title:'Jarvis neler yapar?', text:
+    '✋ Açık elini bir hedefte tut: seçer.\n✊ Yumruk yap: paneli tutar, taşı, elini aç: bırak.\n✊✊ İki yumruk: aç/kapa ile büyüt/küçült.\n' +
+    '“Jarvis, Galata Kulesi\'ni araştır” · “Jarvis, kedi resimleri göster”\n“Jarvis, not al: süt al” · “Jarvis, odağa ekle: spor”\n“Jarvis, şehrim İzmir” · “Jarvis, hava nasıl”\n“Jarvis, sahne modunu aç” · “Jarvis, düzen” · “Jarvis, kapat” · “Jarvis, kalibre et”\nBaşka her şeyi sorabilirsin.' }, 'YARDIM');
+  placeTransient(p, 0, portrait ? -h*0.02 : 0, portrait ? w*0.8 : w*0.45);
+  S.answer = 'Komutlar ekranda efendim.'; speak(S.answer);
 }
 
 // ============ CAMERA / ORIENTATION ============
@@ -715,6 +738,12 @@ function command(txt){
   if ((m = low.match(/^(not al|not et|not yaz|hatırlat)[:,\s]*(.*)$/))){ addNote(txt.slice(txt.length - m[2].length)); return; }
   if (/^notları (sil|temizle)/.test(low)){ notes = []; saveNotes(); pNotes.redraw(); S.answer = 'Notlar temizlendi efendim.'; speak(S.answer); return; }
   if (/^(kapat|temizle|panelleri kapat|görselleri kapat)\b/.test(low)){ clearResearch(); S.answer = 'Temizlendi efendim.'; speak(S.answer); return; }
+  if ((m = low.match(/^(odağa|odak listesine|projelere|projelerime|hedeflere|hedeflerime) ekle[:,\s]*(.+)$/))){ const t = txt.slice(txt.length - m[2].length).trim(); if (t){ FOCUS.push({ name: t[0].toLocaleUpperCase('tr') + t.slice(1) }); saveFocus(); pProj.redraw(); pProj.pop = 1; SFX.tap(); S.answer = `${t} odağa eklendi efendim.`; speak(S.answer); } return; }
+  if ((m = low.match(/^(odaktan|projelerden|hedeflerden) (sil|çıkar|kaldır)[:,\s]*(.+)$/))){ const q = m[3].trim(); const i = FOCUS.findIndex(f => f.name.toLocaleLowerCase('tr').includes(q)); if (i >= 0){ const n = FOCUS.splice(i,1)[0].name; saveFocus(); pProj.redraw(); S.answer = `${n} odaktan çıkarıldı efendim.`; } else S.answer = 'Odak listesinde bulamadım efendim.'; speak(S.answer); return; }
+  if ((m = low.match(/^(şehrim|şehri(mi)?|konumum|konumu(mu)?)\s*(değiştir|ayarla|yap)?[:,\s]*(.+?)\s*(olsun|yap|ayarla)?$/))){ setCity(txt.slice(low.indexOf(m[5]), low.indexOf(m[5]) + m[5].length)); return; }
+  if ((m = low.match(/^adım\s+(.+?)(\s+olsun)?$/))){ PROFILE.name = txt.slice(low.indexOf(m[1]), low.indexOf(m[1]) + m[1].length).trim(); saveProfile(); pTop.redraw(); S.answer = `Memnun oldum ${PROFILE.name}.`; speak(S.answer); return; }
+  if (/(ne yapabilirsin|yardım|komutlar|nasıl kullan)/.test(low)){ showHelp(); return; }
+  if (/hava( durumu)?/.test(low) && !/hakkında/.test(low)){ if (weather){ S.answer = `${PROFILE.city} için şu an ${Math.round(weather.t)} derece, ${weather.txt}. Bugün en düşük ${Math.round(weather.min)}, en yüksek ${Math.round(weather.max)} derece efendim.`; speak(S.answer); return; } if (PROFILE.lat == null){ S.answer = 'Önce şehrinizi söyleyin efendim: “Jarvis, şehrim Ankara.”'; speak(S.answer); return; } }
   if (/kalibr|eli(mi)? (öğren|tanı)/.test(low)){ if (!handsOn) toggleHands().then(startCalib); else startCalib(); return; }
   if (/sahne modu(nu)? (aç|başlat)|sahneye geç/.test(low)){ setStage(true); return; }
   if (/sahne modu(nu)? kapat|sahneden çık/.test(low)){ setStage(false); return; }
@@ -725,11 +754,11 @@ function command(txt){
 }
 
 // ============ BRAIN ============
-const SYS = `Sen J.A.R.V.I.S.'sin: ${USER}'nin kişisel yapay zekâ asistanı. ${USER} İstanbul'da yaşayan solo bir geliştirici ve girişimci; Flutter/iOS, Supabase ve Groq ile uygulamalar yapıyor ve yazılımla pasif gelir kurmaya odaklı. Projeleri: ${PROJECTS.map(p=>p.name+' ('+p.desc+')').join('; ')}. Holografik bir arayüzde görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; ona "efendim" de. Cevapların en fazla 3 kısa cümle, somut ve uygulanabilir olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma.`;
+const SYS = () => `Sen J.A.R.V.I.S.'sin: ${PROFILE.name || 'kullanıcının'}${PROFILE.name ? ' adlı kişinin' : ''} kişisel yapay zekâ asistanı.${PROFILE.city ? ' Kullanıcı ' + PROFILE.city + "'da yaşıyor." : ''}${FOCUS.length ? ' Odak alanları: ' + FOCUS.map(p=>p.name).join(', ') + '.' : ''}${notes.filter(n=>!n.done).length ? ' Açık notları: ' + notes.filter(n=>!n.done).slice(0,5).map(n=>n.t).join('; ') + '.' : ''} Telefonda holografik bir arayüzde görünüyorsun. Her zaman Türkçe, sakin, zeki ve hafif esprili konuş; kullanıcıya "efendim" de. Cevapların en fazla 3 kısa cümle, somut ve uygulanabilir olsun. Markdown, liste, emoji kullanma. Bilmediğin güncel bilgiyi uydurma.`;
 const MODELS = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
 const clean = t => String(t || '').replace(/[*#_`]/g,'').trim();
 const msgs = q => [...history.slice(-8), { role:'user', content:q }];
-const sysNow = () => SYS + ` Şu an: ${new Date().toLocaleString('tr-TR')}.` + (weather ? ` İstanbul'da hava ${Math.round(weather.t)}°C, ${weather.txt}.` : '');
+const sysNow = () => SYS() + ` Şu an: ${new Date().toLocaleString('tr-TR')}.` + (weather ? ` ${PROFILE.city || 'Bulunduğu yerde'} hava ${Math.round(weather.t)}°C, ${weather.txt}.` : '');
 async function viaGroq(key, q){
   const messages = [{ role:'system', content: sysNow() }, ...msgs(q)];
   for (const model of MODELS){
@@ -765,8 +794,19 @@ async function ask(q){
 // ============ WEATHER ============
 const WMO = { 0:'açık', 1:'az bulutlu', 2:'parçalı bulutlu', 3:'kapalı', 45:'sisli', 48:'sisli', 51:'çisenti', 53:'çisenti', 55:'çisenti', 61:'hafif yağmurlu', 63:'yağmurlu', 65:'şiddetli yağmur', 71:'hafif kar', 73:'karlı', 75:'yoğun kar', 80:'sağanak', 81:'sağanak', 82:'şiddetli sağanak', 95:'gök gürültülü', 96:'dolu', 99:'dolu' };
 async function loadWeather(){
-  try { const j = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.97&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FIstanbul&forecast_days=1')).json();
+  if (PROFILE.lat == null) return;
+  try { const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${PROFILE.lat}&longitude=${PROFILE.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`)).json();
     weather = { t:j.current.temperature_2m, txt: WMO[j.current.weather_code] || '—', max:j.daily.temperature_2m_max[0], min:j.daily.temperature_2m_min[0] }; pTop.redraw(); } catch(e){}
+}
+async function setCity(name, silent){
+  name = (name || '').trim().replace(/[.!?]+$/,''); if (!name) return false;
+  try {
+    const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=tr&format=json`)).json();
+    const g = j.results && j.results[0]; if (!g) throw 0;
+    PROFILE.city = g.name; PROFILE.lat = g.latitude; PROFILE.lon = g.longitude; saveProfile(); weather = null; pTop.redraw(); await loadWeather();
+    if (!silent){ S.answer = `Konum ${g.name} olarak ayarlandı efendim.` + (weather ? ` Şu an ${Math.round(weather.t)} derece, ${weather.txt}.` : ''); speak(S.answer); }
+    return true;
+  } catch(e){ PROFILE.city = name; saveProfile(); pTop.redraw(); if (!silent){ S.answer = `${name} şehrini bulamadım efendim.`; speak(S.answer); } return false; }
 }
 loadWeather(); setInterval(loadWeather, 15*60*1000); setInterval(() => pTop.redraw(), 15000);
 
@@ -783,6 +823,8 @@ function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspe
 addEventListener('resize', resize);
 async function go(mode){
   MODE = mode; const k = $('key0').value.trim(); if (k) store.set('groqKey', k);
+  const nm = $('uName').value.trim(); if (nm){ PROFILE.name = nm; saveProfile(); }
+  const ct = $('uCity').value.trim(); if (ct && ct !== PROFILE.city) setCity(ct, true);
   if (mode === 'room'){ try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission(); } catch(e){} }
   try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch(e){}
   audioUnlock();
@@ -793,13 +835,15 @@ async function go(mode){
   $('start').hidden = true; ['bMode','bHand','bGear','bReset','bStage','bar'].forEach(id => $(id).hidden = false);
   resize(); requestAnimationFrame(loop);
   setTimeout(() => { recenter(); startBoot(); }, 300);
-  setTimeout(() => { S.answer = `Tüm sistemler çevrimiçi. Hoş geldin ${USER}. Bugün ne inşa ediyoruz, efendim?`; speak(S.answer); }, 1900);
+  const first = !store.get('seen'); store.set('seen','1');
+  setTimeout(() => { S.answer = first ? `Tüm sistemler çevrimiçi${PROFILE.name ? ', ' + PROFILE.name : ''}. Ne yapabildiğimi görmek için “Jarvis, yardım” deyin.` : `Tekrar hoş geldin${PROFILE.name ? ' ' + PROFILE.name : ''}. Bugün ne yapıyoruz, efendim?`; speak(S.answer); }, 1900);
   toggleHands();
 }
 if (location.hash === '#debug') window.__hj = { S, panels, camera, hud, pDialog, pNotes, pProj, slots, command, get scaleOp(){ return scaleOp; }, get handsOn(){ return handsOn; } };
 $('goDesk').onclick = () => go('desk');
 $('goRoom').onclick = () => go('room');
 })();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
