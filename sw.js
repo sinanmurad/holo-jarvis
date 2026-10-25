@@ -1,6 +1,6 @@
 // Holo Jarvis service worker: network-first for the app shell, cache-first for heavy static libraries/models.
-const SHELL = 'hj-shell-v1', LIBS = 'hj-libs-v1';
-const SHELL_FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
+const SHELL = 'hj-shell-v2', LIBS = 'hj-libs-v1';
+const SHELL_FILES = ['./', './index.html', './hands-worker.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-180.png'];
 const LIB_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'storage.googleapis.com'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(SHELL).then(c => c.addAll(SHELL_FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== LIBS).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
